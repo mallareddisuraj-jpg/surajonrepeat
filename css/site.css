@@ -119,12 +119,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .pack{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(8px,1.2vw,18px)}
 .pack li{list-style:none}.pack button{display:block;width:100%}.pack img{width:100%;height:auto;transition:transform .25s}
 .pack li:hover img{transform:scale(1.025)}
-.photos{columns:4;column-gap:clamp(10px,1.4vw,22px)}
+.photos{columns:3;column-gap:clamp(10px,1.4vw,22px)}
 .photos li{list-style:none;break-inside:avoid;margin-bottom:clamp(14px,1.8vw,26px)}
 .photos button{display:block;width:100%}
 .photos img{width:100%;height:auto}
 .photos small{display:block;color:var(--mute);margin-top:7px}
-@media(max-width:1000px){.photos{columns:3}}
 @media(max-width:760px){.photos{columns:2}.pack{grid-template-columns:1fr 1fr}}
 
 /* safar */
