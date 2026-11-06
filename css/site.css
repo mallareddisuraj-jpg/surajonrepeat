@@ -103,15 +103,18 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 @media(max-width:760px){.films{grid-template-columns:1fr 1fr}}
 
 /* slot machine */
-.slot-stage{position:relative;margin:0 calc(var(--gut)*-1);padding:clamp(28px,4vw,56px) var(--gut) clamp(44px,5vw,72px);display:flex;justify-content:center;overflow:hidden;isolation:isolate}
-.slot-stage::before{content:"";position:absolute;inset:0;z-index:-2;background:repeating-linear-gradient(90deg,rgba(14,48,36,.55) 0 26px,rgba(5,18,14,.75) 26px 54px,rgba(10,36,27,.5) 54px 72px);-webkit-mask-image:radial-gradient(ellipse 72% 92% at 50% 42%,#000 25%,transparent 78%);mask-image:radial-gradient(ellipse 72% 92% at 50% 42%,#000 25%,transparent 78%)}
-.slot-stage::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 34% 62% at 50% -4%,rgba(255,232,190,.34),rgba(255,214,150,.09) 58%,transparent 74%),radial-gradient(ellipse 46% 9% at 50% 97%,rgba(255,59,29,.5),transparent 72%)}
+.slot-stage{position:relative;margin:0 calc(var(--gut)*-1);padding:clamp(28px,4vw,56px) var(--gut) clamp(44px,5vw,72px);display:flex;justify-content:center;isolation:isolate}
+.slot-stage::before{content:"";position:absolute;inset:-120px 0 -90px;z-index:-2;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(14,48,36,.55) 0 26px,rgba(5,18,14,.75) 26px 54px,rgba(10,36,27,.5) 54px 72px);-webkit-mask-image:radial-gradient(closest-side at 50% 50%,#000 34%,rgba(0,0,0,.62) 58%,rgba(0,0,0,.22) 80%,transparent 100%);mask-image:radial-gradient(closest-side at 50% 50%,#000 34%,rgba(0,0,0,.62) 58%,rgba(0,0,0,.22) 80%,transparent 100%)}
+.slot-stage::after{content:"";position:absolute;inset:-120px 0 -90px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 34% 36% at 50% 30%,rgba(255,232,190,.3),rgba(255,222,170,.17) 38%,rgba(255,214,150,.06) 70%,transparent 100%),radial-gradient(ellipse 38% 11% at 50% 84%,rgba(255,59,29,.42),rgba(255,59,29,.14) 55%,transparent 100%)}
 .slot{--w:min(700px,calc(100vw - var(--gut)*2 - 46px));position:relative;width:var(--w);margin-right:clamp(30px,5vw,64px);filter:drop-shadow(0 26px 34px rgba(0,0,0,.7)) drop-shadow(0 0 46px rgba(255,59,29,.2))}
 .slot-body{position:relative;overflow:hidden;padding:0 clamp(14px,3.4%,26px) clamp(12px,2.4%,20px);border-radius:clamp(26px,7%,54px) clamp(26px,7%,54px) 16px 16px;background:linear-gradient(90deg,#4a0504 0,#a80f0a 7%,#e0231a 15%,#c2140e 32%,#ad0f0b 68%,#d91e16 87%,#8e0b08 95%,#3e0403 100%);box-shadow:inset 0 3px 2px rgba(255,190,170,.65),inset 0 -14px 26px rgba(30,0,0,.6)}
 .slot-body::before{content:"";position:absolute;left:5%;right:5%;top:7px;height:clamp(26px,8%,56px);border-radius:50%/100% 100% 0 0;background:linear-gradient(180deg,rgba(255,235,225,.5),transparent);pointer-events:none}
-.slot-hood{position:relative;display:flex;align-items:center;justify-content:center;height:clamp(58px,13vw,92px)}
-.slot-sign{font-weight:900;font-stretch:125%;text-transform:uppercase;letter-spacing:.02em;font-size:clamp(15px,3.3vw,28px);color:#fff4d6;text-shadow:0 0 6px #ffd98a,0 0 18px #ff9d3c,0 0 34px #ff5a1f,0 2px 0 #5c0705;animation:signglow 3.2s ease-in-out infinite}
-@keyframes signglow{50%{text-shadow:0 0 4px #ffd98a,0 0 10px #ff9d3c,0 0 20px #ff5a1f,0 2px 0 #5c0705}}
+.slot-hood{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(2px,.5vw,5px);height:clamp(66px,13.5vw,98px);padding-top:clamp(4px,.8vw,8px)}
+.slot-logo{display:flex;align-items:center;gap:clamp(4px,.7vw,7px);color:#fff;filter:drop-shadow(0 0 7px rgba(255,235,205,.75)) drop-shadow(0 2px 0 #5c0705);animation:signglow 3.2s ease-in-out infinite}
+.slot-logo svg{width:clamp(32px,6.2vw,54px);height:auto;fill:currentColor}
+.slot-logo b{font-weight:800;font-stretch:75%;letter-spacing:-.045em;line-height:1;font-size:clamp(25px,5vw,43px)}
+.slot-sign{font-size:clamp(8.5px,1.25vw,11.5px);letter-spacing:.17em;color:#ffe2bf;text-shadow:0 1px 0 #5c0705,0 0 8px rgba(255,157,60,.8)}
+@keyframes signglow{50%{filter:drop-shadow(0 0 3px rgba(255,235,205,.45)) drop-shadow(0 2px 0 #5c0705)}}
 .bulbs{display:flex;justify-content:space-between;padding:clamp(5px,1vw,8px) clamp(4px,1.2%,10px)}
 .bulbs i{width:clamp(7px,1.3vw,11px);aspect-ratio:1;border-radius:50%;background:#8a5a20;animation:bulb 1.4s linear infinite}
 .bulbs i:nth-child(3n+2){animation-delay:-.47s}.bulbs i:nth-child(3n+3){animation-delay:-.93s}
@@ -146,7 +149,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .slot-lever.dragging .lever-arm,.slot-lever.pulling .lever-arm{transition:transform .13s ease-out}
 .lever-ball{position:absolute;left:50%;top:clamp(-30px,-2.4vw,-16px);width:clamp(30px,4.2vw,50px);aspect-ratio:1;margin-left:calc(clamp(30px,4.2vw,50px)/-2);border-radius:50%;background:radial-gradient(circle at 36% 28%,#ffd3c6,#ef2a1d 24%,#a50c07 62%,#470302);box-shadow:0 5px 12px rgba(0,0,0,.65),0 0 20px rgba(255,59,29,.55)}
 .slot-lever:hover .lever-ball{box-shadow:0 5px 12px rgba(0,0,0,.65),0 0 32px rgba(255,90,50,.95)}
-@media(prefers-reduced-motion:reduce){.slot-sign,.bulbs i{animation:none;background:#fff3c4}.lever-arm{transition:none}}
+@media(prefers-reduced-motion:reduce){.slot-logo{animation:none}.bulbs i{animation:none;background:#fff3c4}.lever-arm{transition:none}}
 
 .yt{display:grid;grid-template-columns:repeat(6,1fr);gap:clamp(20px,2.4vw,36px) clamp(14px,1.7vw,26px)}
 .yt li{list-style:none;grid-column:span 2}
