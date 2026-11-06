@@ -1,24 +1,28 @@
-@font-face{font-family:Archivo;src:url(../assets/fonts/archivo-latin-wdth-normal.woff2) format("woff2-variations");font-weight:100 900;font-stretch:62% 125%;font-display:swap}
-@font-face{font-family:"DM Mono";src:url(../assets/fonts/dm-mono-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
-@font-face{font-family:"DM Mono";src:url(../assets/fonts/dm-mono-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:"The Bold Font";src:url(../assets/fonts/the-bold-font.woff2) format("woff2");font-weight:400 900;font-display:swap}
+@font-face{font-family:Poppins;src:url(../assets/fonts/poppins-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Poppins;src:url(../assets/fonts/poppins-latin-500-normal.woff2) format("woff2");font-weight:500;font-display:swap}
+@font-face{font-family:Poppins;src:url(../assets/fonts/poppins-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Poppins;src:url(../assets/fonts/poppins-latin-700-normal.woff2) format("woff2");font-weight:700;font-display:swap}
+@font-face{font-family:Poppins;src:url(../assets/fonts/poppins-latin-ext-400-normal.woff2) format("woff2");font-weight:400;font-display:swap;unicode-range:U+0100-02BA,U+20A0-20AB,U+20AD-20C0}
+@font-face{font-family:Poppins;src:url(../assets/fonts/poppins-latin-ext-600-normal.woff2) format("woff2");font-weight:600;font-display:swap;unicode-range:U+0100-02BA,U+20A0-20AB,U+20AD-20C0}
 @font-face{font-family:Caveat;src:url(../assets/fonts/caveat-latin-700-normal.woff2) format("woff2");font-weight:700;font-display:swap}
 
-:root{--ink:#0f0f0e;--ink-2:#1a1a18;--line:rgba(236,232,223,.085);--paper:#ece8df;--paper-ink:#121210;--red:#ff3b1d;--text:#ece8df;--mute:#a09c92;--gut:clamp(18px,3.4vw,56px);--wide:125%}
+:root{--ink:#0f0f0e;--ink-2:#1a1a18;--line:rgba(236,232,223,.085);--paper:#ece8df;--paper-ink:#121210;--red:#ff3b1d;--text:#ece8df;--mute:#a09c92;--gut:clamp(18px,3.4vw,56px);--head:"The Bold Font",Poppins,system-ui,sans-serif}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-body{background-color:var(--ink);background-image:url(../assets/img/paper.webp),linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:1024px 1024px,36px 36px,36px 36px;background-blend-mode:soft-light,normal,normal;color:var(--text);font:400 17px/1.55 Archivo,system-ui,sans-serif;overflow-x:hidden}
+body{background-color:var(--ink);background-image:url(../assets/img/paper.webp),linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:1024px 1024px,36px 36px,36px 36px;background-blend-mode:soft-light,normal,normal;color:var(--text);font:400 16px/1.6 Poppins,system-ui,sans-serif;overflow-x:hidden}
 img,video,svg{display:block;max-width:100%}
 a{color:inherit}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 :focus-visible{outline:2px solid var(--red);outline-offset:3px}
-.mono{font:500 12.5px/1.4 "DM Mono",ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase}
+.mono{font:500 12px/1.45 Poppins,system-ui,sans-serif;letter-spacing:.07em;text-transform:uppercase}
 .hand{font:700 clamp(22px,2.4vw,32px)/1.05 Caveat,cursive;color:var(--red)}
-.black{font-weight:900;font-stretch:var(--wide);letter-spacing:-.025em;line-height:.9;text-transform:uppercase}
+.black{font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:.9;text-transform:uppercase}
 .skip{position:absolute;left:-999px}.skip:focus{left:12px;top:12px;z-index:99;background:var(--paper);color:var(--paper-ink);padding:8px 12px}
 
 /* nav */
 .nav{position:fixed;inset:0 0 auto;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:14px var(--gut);mix-blend-mode:difference;color:#fff}
-.logo{display:flex;align-items:center;gap:8px;font-weight:900;font-stretch:var(--wide);font-size:14px;letter-spacing:-.01em;text-decoration:none;text-transform:uppercase}
+.logo{display:flex;align-items:center;gap:8px;font-family:var(--head);font-weight:400;font-size:18px;letter-spacing:-.01em;text-decoration:none;text-transform:uppercase}
 .logo svg{width:20px;height:20px}
 .nav ul{display:flex;gap:clamp(12px,2vw,28px);list-style:none;padding:0}
 .nav a{text-decoration:none}.nav ul a:hover{text-decoration:underline;text-underline-offset:4px}
@@ -27,12 +31,12 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* hero */
 .hero{position:relative;min-height:max(100svh,700px);padding:64px var(--gut) 0;display:flex;flex-direction:column;overflow:hidden}
 .hero-meta{display:flex;justify-content:space-between;gap:16px;color:var(--mute);padding:6px 0 14px;border-bottom:1px solid var(--line);margin-bottom:clamp(12px,2vw,24px)}
-.hero h1{position:relative;z-index:4;font-size:12.7vw;font-weight:900;font-stretch:var(--wide);letter-spacing:-.035em;line-height:.86;text-transform:uppercase}
+.hero h1{position:relative;z-index:4;font-size:15.4vw;font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:.92;text-transform:uppercase}
 .hero h1 span{display:block;white-space:nowrap}
 .loop{display:inline-block!important;width:.74em;height:.74em;vertical-align:-.03em;margin-right:.03em;color:var(--red)}
 .loop svg{width:100%;height:100%;animation:spin 7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.hero-intro{position:relative;z-index:4;max-width:min(46vw,620px);margin-top:clamp(20px,3vw,40px);padding-bottom:clamp(170px,23vw,270px)}
+.hero-intro{position:relative;z-index:4;max-width:min(46vw,620px);margin-top:clamp(20px,3vw,40px);padding-bottom:clamp(170px,23.5vw,300px)}
 .hero-intro p{font-size:clamp(19px,1.9vw,27px);line-height:1.25;font-weight:500}
 .hero-intro strong{font-weight:800;color:var(--red)}
 .cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
@@ -44,7 +48,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .tear{display:block;width:100%;height:clamp(16px,2.2vw,34px);margin-bottom:-1px}
 .tear.flip{transform:scaleY(-1);margin:-1px 0 0}
 .marquee{display:flex;width:max-content;animation:slide 26s linear infinite}
-.marquee span{font-size:clamp(46px,7.6vw,118px);font-weight:900;font-stretch:var(--wide);letter-spacing:-.03em;line-height:1;text-transform:uppercase;padding-right:.45em;white-space:nowrap}
+.marquee span{font-size:clamp(54px,8.4vw,130px);font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:1;text-transform:uppercase;padding-right:.45em;white-space:nowrap}
 .marquee i{color:var(--red);font-style:normal}
 @keyframes slide{to{transform:translateX(-50%)}}
 .portrait{position:absolute;z-index:5;right:clamp(0px,3vw,60px);bottom:0;height:min(71svh,52vw);width:auto;max-width:none}
@@ -62,7 +66,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .sec{position:relative;padding:clamp(64px,9vw,130px) var(--gut) 0}
 .sec-head{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;align-items:end;margin-bottom:clamp(26px,4vw,52px)}
 .sec-head .no{grid-row:1/3;align-self:start;color:var(--red);padding-top:.5em}
-.sec-head h2{font-size:clamp(34px,9vw,136px)}
+.sec-head h2{font-size:clamp(50px,12.4vw,186px)}
 .sec-head h2 em{font:700 .42em/1 Caveat,cursive;text-transform:none;letter-spacing:0;color:var(--red);white-space:nowrap}
 .sec-head p{color:var(--mute);max-width:58ch;font-size:clamp(16px,1.3vw,19px)}
 .reveal{opacity:1}
@@ -75,7 +79,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .hello-grid p.small{font-size:clamp(16px,1.2vw,18px);line-height:1.55;color:var(--mute)}
 .stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--line);border-left:1px solid var(--line);align-self:start}
 .stats div{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:16px 14px}
-.stats b{display:block;font-size:clamp(36px,4.4vw,66px);font-weight:900;font-stretch:var(--wide);letter-spacing:-.03em;line-height:1}
+.stats b{display:block;font-size:clamp(46px,5.8vw,86px);font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:1}
 .stats span{color:var(--mute);display:block;margin-top:8px}
 @media(max-width:760px){.hello-grid{grid-template-columns:1fr}}
 
@@ -87,7 +91,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .card video{opacity:0;transition:opacity .25s}.card video.on{opacity:1}
 .card .frame::after{content:"";position:absolute;inset:0;border:1px solid var(--line);pointer-events:none}
 .card:hover .frame::after,.card:focus-visible .frame::after{border:2px solid var(--red)}
-.card h3{font-size:clamp(17px,1.5vw,22px);font-weight:800;font-stretch:112%;letter-spacing:-.01em;line-height:1.15;margin-top:12px}
+.card h3{font-size:clamp(15px,1.25vw,19px);font-weight:600;letter-spacing:-.01em;line-height:1.15;margin-top:12px}
 .card small{display:block;color:var(--mute);margin-top:5px}
 .card p{color:var(--mute);font-size:15px;line-height:1.4;margin-top:6px}
 
@@ -99,7 +103,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .films li{list-style:none}
 .films li.big{grid-column:1/-1}
 .films .frame{aspect-ratio:16/9}
-.films li.big h3{font-size:clamp(26px,3.6vw,54px);font-weight:900;font-stretch:var(--wide);letter-spacing:-.025em;line-height:1;text-transform:uppercase}
+.films li.big h3{font-size:clamp(34px,4.8vw,72px);font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:1;text-transform:uppercase}
 @media(max-width:760px){.films{grid-template-columns:1fr 1fr}}
 
 /* slot machine */
@@ -112,8 +116,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .slot-hood{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(2px,.5vw,5px);height:clamp(66px,13.5vw,98px);padding-top:clamp(4px,.8vw,8px)}
 .slot-logo{display:flex;align-items:center;gap:clamp(4px,.7vw,7px);color:#fff;filter:drop-shadow(0 0 7px rgba(255,235,205,.75)) drop-shadow(0 2px 0 #5c0705);animation:signglow 3.2s ease-in-out infinite}
 .slot-logo svg{width:clamp(32px,6.2vw,54px);height:auto;fill:currentColor}
-.slot-logo b{font-weight:800;font-stretch:75%;letter-spacing:-.045em;line-height:1;font-size:clamp(25px,5vw,43px)}
-.slot-sign{font-size:clamp(8.5px,1.25vw,11.5px);letter-spacing:.17em;color:#ffe2bf;text-shadow:0 1px 0 #5c0705,0 0 8px rgba(255,157,60,.8)}
+.slot-logo b{font-weight:700;letter-spacing:-.06em;line-height:1;font-size:clamp(25px,5vw,43px)}
+.slot-sign{font-size:clamp(8.5px,1.2vw,11px);letter-spacing:.15em;color:#ffe2bf;text-shadow:0 1px 0 #5c0705,0 0 8px rgba(255,157,60,.8)}
 @keyframes signglow{50%{filter:drop-shadow(0 0 3px rgba(255,235,205,.45)) drop-shadow(0 2px 0 #5c0705)}}
 .bulbs{display:flex;justify-content:space-between;padding:clamp(5px,1vw,8px) clamp(4px,1.2%,10px)}
 .bulbs i{width:clamp(7px,1.3vw,11px);aspect-ratio:1;border-radius:50%;background:#8a5a20;animation:bulb 1.4s linear infinite}
@@ -180,7 +184,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .safar li{list-style:none;display:grid;grid-template-columns:minmax(110px,170px) 1.1fr 1.5fr;gap:6px clamp(14px,2vw,32px);padding:clamp(16px,1.8vw,24px) 0;border-bottom:1px solid var(--line);transition:padding .2s}
 .safar li:hover{padding-left:12px;border-bottom-color:var(--red)}
 .safar .y{color:var(--mute);padding-top:.35em}
-.safar h3{font-size:clamp(21px,2.5vw,38px);font-weight:900;font-stretch:var(--wide);letter-spacing:-.025em;line-height:1;text-transform:uppercase}
+.safar h3{font-size:clamp(28px,3.4vw,52px);font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:1;text-transform:uppercase}
 .safar small{display:block;color:var(--red);margin-top:8px}
 .safar p{color:var(--mute);font-size:16px;line-height:1.45}
 @media(max-width:760px){.safar li{grid-template-columns:1fr}}
@@ -188,7 +192,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* skills */
 .skills{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-left:1px solid var(--line)}
 .skills>div{padding:18px 16px 26px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-.skills h3{font-size:clamp(19px,1.75vw,26px);font-weight:900;font-stretch:var(--wide);letter-spacing:-.02em;line-height:1.05;text-transform:uppercase;margin-bottom:10px}
+.skills h3{font-size:clamp(25px,2.4vw,36px);font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:1.05;text-transform:uppercase;margin-bottom:10px}
 .skills p{color:var(--mute);font-size:16px;line-height:1.45}
 .tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;padding:0}
 .tools li{list-style:none;border:1px solid var(--line);padding:6px 10px;color:var(--mute)}
@@ -198,10 +202,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 /* contact */
 .contact{margin-top:clamp(70px,10vw,140px);color:var(--paper-ink)}
 .contact .body{background-color:var(--paper);background-image:url(../assets/img/paper.webp);background-blend-mode:soft-light;padding:clamp(36px,6vw,80px) var(--gut) 26px}
-.contact h2{font-size:clamp(50px,13vw,214px);letter-spacing:-.04em;line-height:.84}
+.contact h2{font-size:clamp(76px,18vw,300px);letter-spacing:.008em;line-height:.9}
 .contact h2 span{display:block}
 .contact .hand{display:block;margin:18px 0 26px;font-size:clamp(28px,3.4vw,50px)}
-.mail{display:inline-block;font-size:clamp(20px,4vw,62px);font-weight:900;font-stretch:112%;letter-spacing:-.025em;text-decoration:underline;text-decoration-thickness:.07em;text-underline-offset:.13em;word-break:break-word}
+.mail{display:inline-block;font-size:clamp(20px,4vw,62px);font-weight:700;letter-spacing:-.025em;text-decoration:underline;text-decoration-thickness:.07em;text-underline-offset:.13em;word-break:break-word}
 .mail:hover{color:var(--red)}
 .contact .cta .btn{border-color:var(--paper-ink)}
 .contact .cta .btn:hover{background:var(--paper-ink);color:var(--paper)}
