@@ -95,7 +95,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .card small{display:block;color:var(--mute);margin-top:5px}
 .card p{color:var(--mute);font-size:15px;line-height:1.4;margin-top:6px}
 
-.reels{display:flex;gap:clamp(14px,1.7vw,26px);overflow-x:auto;scroll-snap-type:x proximity;margin:0 calc(var(--gut)*-1);padding:6px var(--gut) 16px;scrollbar-width:thin;scrollbar-color:var(--red) transparent}
+.reels{display:flex;gap:clamp(14px,1.7vw,26px);overflow-x:auto;scroll-snap-type:x proximity;scroll-padding-left:var(--gut);margin:0 calc(var(--gut)*-1);padding:12px var(--gut) 16px;scrollbar-width:thin;scrollbar-color:var(--red) transparent}
 .reels li{list-style:none;flex:0 0 clamp(210px,21vw,310px);scroll-snap-align:start}
 .reels li:nth-child(even){margin-top:clamp(14px,2.4vw,38px)}
 .reels .frame{aspect-ratio:9/16}
@@ -234,3 +234,10 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .mini img{width:100%;height:auto;aspect-ratio:9/16;object-fit:cover;background:#000;outline:1px solid var(--line);outline-offset:-1px;transition:transform .15s}
 .mini a:hover img,.mini a:focus-visible img{outline:2px solid var(--red);transform:translateY(-3px)}
 .mini b{display:block;margin-top:5px;font-size:11px;font-weight:500;color:var(--text)}
+.reels li.hot{flex-basis:clamp(236px,23.5vw,350px);margin-top:0}
+.hot .frame{outline:3px solid var(--red);outline-offset:3px;box-shadow:0 0 34px rgba(255,59,29,.5)}
+.hot .card:hover .frame,.hot .card:focus-visible .frame{box-shadow:0 0 52px rgba(255,59,29,.85)}
+.hot .card .frame::after{border:0}
+.hot h3{color:var(--text)}
+.hot-tag{position:absolute;left:10px;top:10px;z-index:2;padding:5px 9px;background:var(--text);color:#0b0b0a}
+.lb iframe.vert{width:min(400px,100%);height:100%;aspect-ratio:auto;background:#fff;border-radius:6px}

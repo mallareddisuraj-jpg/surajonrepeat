@@ -30,11 +30,11 @@
     dlg.showModal();
   };
   dlg.addEventListener('close', () => { if (!dlg.open) stage.replaceChildren(); });
-  dlg.addEventListener('click', e => { if (e.target === dlg || e.target.classList.contains('lb')) dlg.close(); });
-  document.getElementById('lb-close').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', e => { if (e.target === dlg || e.target.classList.contains('lb')) { stage.replaceChildren(); dlg.close(); } });
+  document.getElementById('lb-close').addEventListener('click', () => { stage.replaceChildren(); dlg.close(); });
 
   document.addEventListener('click', e => {
-    const t = e.target.closest('[data-film],[data-img],[data-yt]');
+    const t = e.target.closest('[data-film],[data-img],[data-yt],[data-ig]');
     if (!t) return;
     e.preventDefault();
     const label = t.dataset.label;
@@ -46,6 +46,13 @@
       const i = document.createElement('img');
       i.src = t.dataset.img; i.alt = label || '';
       open(i, label);
+    } else if (t.dataset.ig) {
+      const f = document.createElement('iframe');
+      f.src = `https://www.instagram.com/reel/${t.dataset.ig}/embed/`;
+      f.title = label || 'Instagram reel';
+      f.className = 'vert';
+      f.allow = 'autoplay; encrypted-media; fullscreen';
+      open(f, label);
     } else {
       const f = document.createElement('iframe');
       f.src = `https://www.youtube-nocookie.com/embed/${t.dataset.yt}?autoplay=1&rel=0`;
