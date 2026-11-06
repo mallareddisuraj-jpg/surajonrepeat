@@ -172,3 +172,12 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.marquee,.loop svg{animation:none}.js .reveal{opacity:1;transform:none;transition:none}}
 .films li.big .frame{aspect-ratio:2.35}
 .btn{text-transform:inherit;letter-spacing:inherit;font:inherit}
+.mini{margin-top:clamp(18px,2.2vw,32px)}
+.mini>p{color:var(--mute);margin-bottom:10px}
+.mini>p span{opacity:.7}
+.mini ul{display:flex;gap:8px;overflow-x:auto;padding:0 0 8px;scrollbar-width:thin;scrollbar-color:var(--red) transparent}
+.mini li{list-style:none;flex:0 0 clamp(60px,5.25vw,78px)}
+.mini a{display:block;text-decoration:none}
+.mini img{width:100%;height:auto;aspect-ratio:9/16;object-fit:cover;background:#000;outline:1px solid var(--line);outline-offset:-1px;transition:transform .15s}
+.mini a:hover img,.mini a:focus-visible img{outline:2px solid var(--red);transform:translateY(-3px)}
+.mini b{display:block;margin-top:5px;font-size:11px;font-weight:500;color:var(--text)}
