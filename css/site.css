@@ -32,6 +32,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .logo{display:flex;align-items:center;gap:8px;font-family:var(--head);font-weight:400;font-size:15px;letter-spacing:-.01em;text-decoration:none;text-transform:uppercase}
 .logo svg{width:20px;height:20px}
 .nav ul{display:flex;gap:clamp(12px,2vw,28px);list-style:none;padding:0}
+.nav ul{align-items:center}
+.sound{position:relative;display:block;width:20px;height:20px;padding:0;background:none;border:0;color:inherit;cursor:pointer}
+.sound[hidden]{display:none}
+.sound::before{content:"";position:absolute;inset:-12px}
+.sound svg{display:block;width:100%;height:100%}
+.sound:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.sound[aria-pressed=true] .s-x,.sound[aria-pressed=false] .s-wave{display:none}
 .nav a{text-decoration:none}.nav ul a:hover{text-decoration:underline;text-underline-offset:4px}
 @media(max-width:760px){.nav .opt{display:none}}
 
@@ -40,8 +47,32 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .hero-meta{display:flex;justify-content:space-between;gap:16px;color:var(--mute);padding:6px 0 14px;border-bottom:1px solid var(--line);margin-bottom:clamp(12px,2vw,24px)}
 .hero h1{position:relative;z-index:4;font-size:13.2vw;font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:.92;text-transform:uppercase}
 .hero h1 span{display:block;white-space:nowrap}
-.loop{display:inline-block!important;width:.74em;height:.74em;vertical-align:-.03em;margin-right:.03em;color:var(--red)}
-.loop svg{width:100%;height:100%;animation:spin 7s linear infinite}
+/* the REC button in the O of On: speckled metal ring, black dome; grey until the lights are on */
+.power{position:relative;display:inline-block;width:.8em;height:.8em;margin-right:.03em;padding:0;vertical-align:-.05em;border:0;border-radius:50%;cursor:pointer;font-size:inherit;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1.5 -.55'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(circle at 50% 30%,#5a5a58,#3a3a38 62%,#272725);box-shadow:inset 0 .006em .01em rgba(255,255,255,.28),inset 0 -.008em .014em rgba(0,0,0,.6),0 .02em .06em rgba(0,0,0,.65);transition:transform .12s}
+.power::before{content:"";position:absolute;inset:-14px;border-radius:50%}
+.power:active{transform:scale(.97)}
+.power:focus-visible{outline:2px solid #fff;outline-offset:4px}
+.rec-face{position:absolute;inset:15%;border-radius:50%;overflow:hidden;background:radial-gradient(ellipse 70% 42% at 50% 14%,rgba(255,255,255,.2),transparent 72%),radial-gradient(circle at 50% 42%,#1a1a1b,#070708 72%);box-shadow:0 0 0 .012em #161615,0 0 0 .02em rgba(255,255,255,.14),inset 0 -.008em .02em rgba(255,255,255,.08)}
+.rec-label{position:absolute;inset:0;display:flex!important;align-items:center;justify-content:center;font:700 .17em/1 "Open Sauce Sans",Arial,sans-serif;letter-spacing:.03em;color:#858583}
+.rec-lit{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,40,24,.3),rgba(255,40,24,.07) 62%,transparent 80%)}
+.rec-lit .rec-label{color:#ff2a18;text-shadow:0 0 .1em #ff2a18,0 0 .32em rgba(255,40,24,.8)}
+.lights-off .rec-lit{opacity:0}
+/* lights off: a dark room with a hole around the button, which stays the only thing you can touch */
+.lights-room{display:none;position:fixed;inset:0;z-index:90;pointer-events:none}
+.lights-off .lights-room,.lights-coming-on .lights-room{display:block}
+.lights-off{overflow:hidden}
+.lights-off body *{pointer-events:none}
+.lights-off .power,.lights-off .power *{pointer-events:auto}
+.lights-dark{position:absolute;inset:0;background:rgba(3,3,3,.975);-webkit-mask:radial-gradient(circle var(--r,0) at var(--x,50%) var(--y,50%),transparent 98%,#000 100%);mask:radial-gradient(circle var(--r,0) at var(--x,50%) var(--y,50%),transparent 98%,#000 100%)}
+.lights-glow{position:absolute;inset:0;background:radial-gradient(circle calc(var(--r,0px)*3) at var(--x,50%) var(--y,50%),rgba(255,255,255,.1),rgba(255,255,255,.03) 45%,transparent 100%);animation:roomglow 2.6s ease-in-out infinite}
+@keyframes roomglow{50%{opacity:.55}}
+.lights-hint{position:absolute;left:var(--hx,24px);top:var(--hy,60%);margin:0;font:700 clamp(22px,2.4vw,34px)/1.1 Caveat,cursive;color:#ff4a2c;text-shadow:0 0 14px rgba(255,40,20,.7);background:#030303;box-shadow:0 0 14px 10px #030303;border-radius:6px;animation:roomglow 2.6s ease-in-out infinite}
+.lights-coming-on .lights-hint,.lights-coming-on .lights-glow{display:none}
+/* cold light, driven from site.js so the picture and the sound share one timeline */
+.lights-cold{position:absolute;inset:0;opacity:0}
+.lights-off .lights-cold{display:none}
+.lights-cold{background:radial-gradient(ellipse 90% 75% at 50% 0,rgba(195,228,255,.3),rgba(195,228,255,.07) 70%,transparent)}
+@media(prefers-reduced-motion:reduce){.lights-glow,.lights-hint{animation:none}.lights-coming-on .lights-room{display:none}}
 @keyframes spin{to{transform:rotate(360deg)}}
 .hero-intro{position:relative;z-index:4;max-width:min(46vw,620px);margin-top:clamp(20px,3vw,40px);padding-bottom:clamp(170px,23.5vw,300px)}
 .hero-intro p{font-size:clamp(19px,1.9vw,27px);line-height:1.25;font-weight:500}
@@ -253,7 +284,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .skills h3{font-size:clamp(21px,2vw,30px);font-family:var(--head);font-weight:400;letter-spacing:.008em;line-height:1.05;text-transform:uppercase;margin-bottom:10px}
 .skills p{color:var(--mute);font-size:16px;line-height:1.45}
 .tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px;padding:0}
-.tools li{list-style:none;border:1px solid var(--line);padding:6px 10px;color:var(--mute)}
+.tools li{display:flex;align-items:center;gap:8px;list-style:none;border:1px solid var(--line);padding:6px 10px;color:var(--mute);transition:color .18s,border-color .18s,box-shadow .18s}
+.tools svg{flex:none;width:16px;height:16px;fill:currentColor;transition:color .18s,filter .18s}
+.tools li:hover{color:#fff;border-color:var(--c);box-shadow:0 0 14px -3px var(--c),inset 0 0 12px -7px var(--c)}
+.tools li:hover svg{color:var(--c);filter:drop-shadow(0 0 5px var(--c))}
+@media(prefers-reduced-motion:reduce){.tools li,.tools svg{transition:none}}
 @media(max-width:900px){.skills{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.skills{grid-template-columns:1fr}}
 
@@ -269,7 +304,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .contact .cta .btn:hover{background:var(--paper-ink);color:var(--paper)}
 .contact .btn.solid{background:var(--paper-ink);border-color:var(--paper-ink);color:var(--paper)}
 .contact .btn.solid:hover{background:var(--red);border-color:var(--red);color:#0b0b0a}
-footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:clamp(40px,6vw,80px);padding-top:14px;border-top:1px solid rgba(18,18,16,.3)}
+footer.mono{font-size:9px}
+footer{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;margin-top:clamp(40px,6vw,80px);padding-top:14px;border-top:1px solid rgba(18,18,16,.3)}
 
 /* lightbox */
 dialog{border:0;padding:0;background:transparent;max-width:none;max-height:none;width:100vw;height:100svh;color:#fff}
@@ -280,7 +316,7 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .lb-close{position:absolute;top:12px;right:16px;padding:8px 12px;background:var(--red);color:#0b0b0a}
 .lb-title{position:absolute;top:18px;left:16px;right:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.marquee,.loop svg{animation:none}.js .reveal{opacity:1;transform:none;transition:none}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.marquee{animation:none}.js .reveal{opacity:1;transform:none;transition:none}}
 .films li.big .frame{aspect-ratio:2.35}
 .btn{text-transform:inherit;letter-spacing:inherit;font:inherit}
 .mini{margin-top:clamp(18px,2.2vw,32px)}
@@ -376,7 +412,7 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .ph-pill{padding:9px 16px;border:1.5px solid rgba(236,232,223,.4);color:var(--text);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
 .ph-pill:hover{border-color:var(--text)}
 .ph-pill[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#0b0b0a}
-.ph-stage{position:relative;height:max(320px,min(64svh,92vw));touch-action:pan-y;isolation:isolate}
+.ph-stage{position:relative;height:max(160px,min(32svh,46vw));touch-action:pan-y;isolation:isolate}
 .ph-card{position:absolute;left:50%;top:50%;height:100%;aspect-ratio:.86;padding:0;background:#111;opacity:0;pointer-events:none;box-shadow:0 18px 44px rgba(0,0,0,.7);transition:transform .6s cubic-bezier(.3,.7,.2,1),opacity .4s}
 .ph-card.still{transition:none}
 .ph-card.on{opacity:1;pointer-events:auto}

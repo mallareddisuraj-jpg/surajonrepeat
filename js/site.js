@@ -5,6 +5,221 @@
   const saveData = navigator.connection && navigator.connection.saveData;
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // The tube light coming on, shared by the picture and the sound: seconds, brightness and how
+  // it moves to the next point. One soft blink that curves up and back down, then on for good.
+  const FLICKER = {
+    end: 0.8,
+    on: 0.52,
+    page: [[0, 0, 'ease-in-out'], [0.2, 0.6, 'ease-in-out'], [0.38, 0, 'step-end'], [0.52, 1, 'ease-out'], [0.8, 1]],
+    pings: [0.52]
+  };
+
+  // Sounds: all generated here, so there are no audio files to load. They only play after the
+  // visitor has clicked or pressed something, and the nav button mutes them for good.
+  const sound = (() => {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const none = { lightsOn() {}, lightsOff() {}, spin() {}, stop() {}, tick() {} };
+    const toggle = document.querySelector('.sound');
+    if (!AC || !toggle) return none;
+    let on = true, ctx = null, out = null, noise = null;
+    try { on = localStorage.getItem('sound') !== 'off'; } catch (e) {}
+    const VOLUME = 0.6;
+    const wake = () => {
+      if (!on) return;
+      if (!ctx) {
+        ctx = new AC();
+        out = ctx.createGain();
+        out.gain.value = VOLUME;
+        const soft = ctx.createBiquadFilter();
+        soft.type = 'lowpass';
+        soft.frequency.value = 5000;
+        out.connect(soft).connect(ctx.destination);
+        noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+        const d = noise.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      }
+      if (ctx.state === 'suspended') ctx.resume();
+    };
+    // Sound that could not start right now is dropped, never saved up for a later click
+    const play = fn => {
+      if (!on) return;
+      const seen = navigator.userActivation;
+      if (seen && !seen.hasBeenActive) return;
+      wake();
+      if (ctx.state === 'running') { fn(ctx.currentTime + 0.005); return; }
+      const asked = performance.now();
+      ctx.resume().then(() => { if (performance.now() - asked < 300) fn(ctx.currentTime + 0.005); });
+    };
+    const envelope = (t, peak, dur) => {
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(peak, t);
+      g.gain.exponentialRampToValueAtTime(0.0008, t + dur);
+      g.connect(out);
+      return g;
+    };
+    const burst = (t, peak, dur, type, freq) => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      const f = ctx.createBiquadFilter();
+      f.type = type;
+      f.frequency.value = freq;
+      src.connect(f).connect(envelope(t, peak, dur));
+      src.start(t, Math.random() * 0.8, dur + 0.02);
+    };
+    const tone = (t, peak, dur, freq, to, type = 'sine') => {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+      o.connect(envelope(t, peak, dur));
+      o.start(t);
+      o.stop(t + dur + 0.02);
+    };
+    const clunk = (t, peak = 1) => {
+      burst(t, 0.16 * peak, 0.02, 'bandpass', 1300);
+      tone(t, 0.55 * peak, 0.11, 150, 60);
+    };
+    // Pressing record on a camera: one clean, steady electronic beep with hard edges, then the
+    // small ping as the lights snap on
+    const recordBeep = t => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.value = 2800;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.14, t + 0.004);
+      g.gain.setValueAtTime(0.14, t + 0.11);
+      g.gain.linearRampToValueAtTime(0, t + 0.118);
+      o.connect(g).connect(out);
+      o.start(t);
+      o.stop(t + 0.13);
+      FLICKER.pings.forEach(at => tone(t + at, 0.07, 0.16, 2100, 2000));
+    };
+    const reelTicks = (t, ms, pitch) => {
+      let at = 0, gap = 0.04;
+      while (at < ms / 1000 - 0.05) {
+        burst(t + at, 0.05, 0.012, 'bandpass', pitch);
+        at += gap;
+        gap = Math.min(0.17, gap * 1.1);
+      }
+    };
+    const whirr = (t, ms) => {
+      const src = ctx.createBufferSource();
+      src.buffer = noise;
+      src.loop = true;
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.frequency.setValueAtTime(1100, t);
+      f.frequency.exponentialRampToValueAtTime(350, t + ms / 1000);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0008, t);
+      g.gain.exponentialRampToValueAtTime(0.035, t + 0.12);
+      g.gain.exponentialRampToValueAtTime(0.0008, t + ms / 1000);
+      src.connect(f).connect(g).connect(out);
+      src.start(t);
+      src.stop(t + ms / 1000 + 0.02);
+    };
+    addEventListener('pointerdown', wake, true);
+    addEventListener('pointerup', wake, true);
+    addEventListener('keydown', wake, true);
+    toggle.hidden = false;
+    const paint = () => toggle.setAttribute('aria-pressed', on);
+    paint();
+    toggle.addEventListener('click', () => {
+      on = !on;
+      try { localStorage.setItem('sound', on ? 'on' : 'off'); } catch (e) {}
+      if (out) out.gain.value = on ? VOLUME : 0;
+      paint();
+      if (on) play(t => clunk(t, 0.5));
+    });
+    let lastTick = 0;
+    return {
+      lightsOn: () => play(t => { clunk(t); if (!calm) recordBeep(t + 0.02); }),
+      lightsOff: () => play(t => { clunk(t); tone(t, 0.1, 0.3, 110, 50); }),
+      spin: runs => play(t => {
+        clunk(t, 0.9);
+        whirr(t, Math.max(...runs));
+        runs.forEach((ms, n) => reelTicks(t, ms, 1100 + n * 200));
+      }),
+      stop: () => play(t => clunk(t, 0.7)),
+      tick: () => {
+        const now = performance.now();
+        if (now - lastTick < 28) return;
+        lastTick = now;
+        play(t => { burst(t, 0.1, 0.012, 'bandpass', 1800); });
+      }
+    };
+  })();
+
+  // Lights: the page opens dark with only the power button lit. Pressing it brings the lights up.
+  // Scrolling or Escape also brings them up, so nobody who misses the button is stuck in the dark.
+  const power = document.querySelector('.power');
+  const room = document.querySelector('.lights-room');
+  if (power && room) {
+    window.__lights = true;
+    const root = document.documentElement;
+    const isOff = () => root.classList.contains('lights-off');
+    const aimHole = () => {
+      const b = power.getBoundingClientRect(), r = b.width / 2, x = b.left + r, y = b.top + r;
+      room.style.setProperty('--x', x + 'px');
+      room.style.setProperty('--y', y + 'px');
+      room.style.setProperty('--r', r + 3 + 'px');
+      room.style.setProperty('--hx', Math.max(16, b.left) + 'px');
+      room.style.setProperty('--hy', b.bottom + 18 + 'px');
+    };
+    const label = () => power.setAttribute('aria-label', isOff() ? 'Turn the lights on' : 'Turn the lights off');
+    let flickerDone = 0;
+    const lightsOn = () => {
+      if (!isOff()) return;
+      sound.lightsOn();
+      root.classList.remove('lights-off');
+      label();
+      try { sessionStorage.setItem('lit', '1'); } catch (e) {}
+      if (calm) return;
+      root.classList.add('lights-coming-on');
+      const ms = FLICKER.end * 1000;
+      const run = (cls, frames) => room.querySelector(cls).animate(
+        frames.map(([at, v, easing]) => ({ offset: at / FLICKER.end, opacity: v, easing: easing || 'linear' })),
+        { duration: ms, fill: 'both' }
+      );
+      const parts = [
+        run('.lights-dark', FLICKER.page.map(([at, v, e]) => [at, 1 - v, e])),
+        run('.lights-cold', [...FLICKER.page.slice(0, -1), [FLICKER.end, 0]]),
+        power.querySelector('.rec-lit').animate(
+          FLICKER.page.map(([at, v, easing]) => ({ offset: at / FLICKER.end, opacity: v, easing: easing || 'linear' })),
+          { duration: ms, fill: 'both' }
+        )
+      ];
+      clearTimeout(flickerDone);
+      flickerDone = setTimeout(() => {
+        root.classList.remove('lights-coming-on');
+        parts.forEach(a => a.cancel());
+      }, ms);
+    };
+    const lightsOff = () => {
+      sound.lightsOff();
+      root.classList.remove('lights-coming-on');
+      root.classList.add('lights-off');
+      label();
+      aimHole();
+      try { sessionStorage.removeItem('lit'); } catch (e) {}
+    };
+    power.addEventListener('click', () => { if (isOff()) lightsOn(); else lightsOff(); });
+    addEventListener('wheel', e => { if (isOff() && e.deltaY > 0) lightsOn(); }, { passive: true });
+    addEventListener('touchmove', e => { if (isOff() && !e.target.closest('.power')) lightsOn(); }, { passive: true });
+    addEventListener('keydown', e => {
+      if (!isOff()) return;
+      if (e.key === 'Tab') { e.preventDefault(); power.focus(); }
+      else if (e.target !== power && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); lightsOn(); }
+      else if (['Escape', 'ArrowDown', 'PageDown', 'End'].includes(e.key)) lightsOn();
+    });
+    addEventListener('resize', () => { if (isOff()) aimHole(); });
+    addEventListener('load', () => { if (isOff()) aimHole(); });
+    if (document.fonts) document.fonts.ready.then(() => { if (isOff()) aimHole(); });
+    aimHole();
+    label();
+  }
+
   // The nav slides away while scrolling down and returns on the way up, so it never sits on the content
   let lastY = scrollY;
   addEventListener('scroll', () => {
@@ -550,11 +765,13 @@
     };
     if (lever) {
       grip = lever.firstElementChild;
-      let grabAt = 0;
+      let grabAt = 0, lastNotch = -1;
       const seek = x => {
         const left = lever.getBoundingClientRect().left;
         const r = (x - left - grabAt) / (lever.clientWidth - grip.offsetWidth);
         off = Math.max(0, Math.min(0.9999, r)) * setW;
+        const notch = Math.floor(off / setW * 36);
+        if (notch !== lastNotch) { lastNotch = notch; sound.tick(); }
         thrown = 0; speed = 0;
         flow.style.transform = `translate3d(${-off}px,0,0)`;
         showLever();
@@ -578,6 +795,7 @@
         if (!step) return;
         e.preventDefault();
         off = (off + step + setW) % setW;
+        sound.tick();
         speed = 0;
         flow.style.transform = `translate3d(${-off}px,0,0)`;
         showLever();
@@ -818,11 +1036,12 @@
     const spin = async () => {
       if (busy) return;
       const next = pick();
-      if (calm) { show(next); return; }
+      if (calm) { sound.stop(); show(next); return; }
       busy = true;
       sizeReels();
       slot.classList.remove('won');
       slot.classList.add('spinning');
+      sound.spin(reels.map((_, n) => 1050 + n * 430));
       await Promise.all(reels.map(async (r, n) => {
         const strip = r.firstElementChild;
         const fillers = 12 + n * 5;
@@ -839,6 +1058,7 @@
           { duration: run, easing: 'cubic-bezier(.14,.62,.2,1.025)', fill: 'forwards' }
         );
         await motion.finished;
+        sound.stop();
         strip.replaceChildren(cell(next, n));
         motion.cancel();
       }));
