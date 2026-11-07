@@ -5,6 +5,216 @@
   const saveData = navigator.connection && navigator.connection.saveData;
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Films stage: one film fills it, the next wait in a row, and a card opens into the stage.
+  // Runs before the preview observer below so the list's own videos never load.
+  const filmList = document.querySelector('ul.films');
+  if (filmList) {
+    const HOLD = 7000, MOVE = calm ? 0 : 760;
+    const films = [...filmList.children].map(li => {
+      const c = li.querySelector('.card');
+      const v = c.querySelector('video');
+      return {
+        title: c.querySelector('h3').textContent,
+        meta: c.querySelector('small').textContent,
+        desc: (c.querySelector('p') || {}).textContent || '',
+        poster: c.querySelector('img').getAttribute('src'),
+        preview: v && v.dataset.src,
+        zoom: c.dataset.zoom, // crops black bars baked into the footage
+        action: c.querySelector('.play').textContent,
+        href: c.getAttribute('href'),
+        data: { film: c.dataset.film, yt: c.dataset.yt, ig: c.dataset.ig, label: c.dataset.label }
+      };
+    });
+    const N = films.length;
+    const box = document.createElement('div');
+    box.className = 'fs';
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-roledescription', 'carousel');
+    box.setAttribute('aria-label', 'Films');
+    box.innerHTML = `<div class="fs-timer" aria-hidden="true"><i></i></div>
+      <div class="fs-cards"></div>
+      <div class="fs-info"><small class="mono"></small><h3></h3><p></p><a class="btn solid mono"></a></div>
+      <div class="fs-nav mono"><button class="fs-arrow" type="button" aria-label="Previous film">&larr;</button><button class="fs-arrow" type="button" aria-label="Next film">&rarr;</button><span class="fs-line" aria-hidden="true"><i></i></span><span class="fs-count"></span></div>`;
+    filmList.replaceWith(box);
+
+    const q = s => box.querySelector(s);
+    const info = q('.fs-info'), play = q('.fs-info a'), count = q('.fs-count'), line = q('.fs-line i');
+    const [prevBtn, nextBtn] = box.querySelectorAll('.fs-arrow');
+    const vid = document.createElement('video');
+    vid.className = 'fs-vid';
+    vid.muted = true; vid.loop = true; vid.playsInline = true; vid.preload = 'none';
+    vid.setAttribute('aria-hidden', 'true');
+    vid.addEventListener('playing', () => vid.classList.add('on'));
+
+    const cards = films.map((f, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fs-card';
+      b.innerHTML = '<img alt="" decoding="async"><span class="fs-card-text"><small class="mono"></small><b></b></span>';
+      if (f.zoom) b.firstElementChild.style.transform = `scale(${f.zoom})`;
+      b.querySelector('small').textContent = f.meta.split(' / ')[0];
+      b.querySelector('b').textContent = f.title;
+      b.addEventListener('click', () => {
+        if (i === active) { if (!busy) play.click(); }
+        else go(i, 1);
+      });
+      q('.fs-cards').append(b);
+      return b;
+    });
+
+    let active = 0, busy = false, hover = false, keyFocus = false, inView = false;
+    let W = 0, cw = 0, ch = 0, gap = 0, x0 = 0, y0 = 0, H = 0;
+    const offset = i => (i - active + N) % N;
+    const slotLeft = off => x0 + (off - 1) * (cw + gap);
+
+    const measure = () => {
+      W = box.clientWidth; H = box.clientHeight;
+      const narrow = W < 760, nav = narrow ? 62 : 86;
+      ch = Math.round(H * (narrow ? 0.27 : 0.5));
+      cw = Math.round(ch * 0.74);
+      gap = narrow ? 10 : 18;
+      x0 = narrow ? info.offsetLeft : Math.round(W * 0.5);
+      y0 = H - nav - ch;
+      box.style.setProperty('--x0', x0 + 'px');
+      box.style.setProperty('--above-row', (narrow ? nav + ch + 18 : 34) + 'px');
+    };
+    const place = (i, off) => {
+      const c = cards[i], s = c.style;
+      if (off === 0) { s.left = s.top = '0px'; s.width = W + 'px'; s.height = H + 'px'; }
+      else { s.left = slotLeft(off) + 'px'; s.top = y0 + 'px'; s.width = cw + 'px'; s.height = ch + 'px'; }
+      const shown = off > 0 && slotLeft(off) < W;
+      c.tabIndex = shown ? 0 : -1;
+      if (shown) c.setAttribute('aria-label', `Show ${films[i].title}`); else c.removeAttribute('aria-label');
+      c.toggleAttribute('aria-hidden', !shown && off !== 0);
+      // Only fetch posters that are near the screen
+      if (off === N - 1 || shown || slotLeft(off - 1) < W) {
+        const img = c.firstElementChild;
+        if (!img.getAttribute('src')) img.src = films[i].poster;
+      }
+    };
+    const still = fn => {
+      cards.forEach(c => c.classList.add('still'));
+      fn();
+      void box.offsetWidth;
+      cards.forEach(c => c.classList.remove('still'));
+    };
+    const layout = () => { measure(); still(() => cards.forEach((c, i) => { place(i, offset(i)); c.classList.toggle('act', i === active); })); };
+
+    const describe = () => {
+      const f = films[active];
+      info.classList.remove('in');
+      info.querySelector('small').textContent = f.meta;
+      const h = info.querySelector('h3');
+      h.textContent = f.title;
+      h.classList.toggle('long', f.title.length > 24);
+      const p = info.querySelector('p');
+      p.textContent = f.desc;
+      p.hidden = !f.desc;
+      play.textContent = f.action;
+      play.href = f.href || f.data.film;
+      Object.keys(f.data).forEach(k => { if (f.data[k]) play.dataset[k] = f.data[k]; else delete play.dataset[k]; });
+      const external = /^https:\/\/www\.behance/.test(f.href || '');
+      if (external) { play.target = '_blank'; play.rel = 'noopener'; } else { play.removeAttribute('target'); play.removeAttribute('rel'); }
+      count.textContent = `${String(active + 1).padStart(2, '0')} / ${N}`;
+      line.style.transform = `scaleX(${(active + 1) / N})`;
+      void info.offsetWidth;
+      info.classList.add('in');
+    };
+
+    const stopPreview = () => {
+      vid.classList.remove('on');
+      vid.pause();
+      vid.removeAttribute('src');
+      vid.load();
+      vid.remove();
+    };
+    const startPreview = () => {
+      const src = films[active].preview;
+      if (!src || saveData || calm || !inView || dlg.open) return;
+      vid.style.transform = films[active].zoom ? `scale(${films[active].zoom})` : '';
+      cards[active].append(vid);
+      vid.src = src;
+      vid.play().catch(() => {});
+    };
+
+    const timer = calm ? null : q('.fs-timer i').animate(
+      [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: HOLD, easing: 'linear' });
+    const canRun = () => inView && !hover && !keyFocus && !dlg.open && !document.hidden;
+    const sync = () => {
+      if (dlg.open || !inView) { if (!vid.paused) vid.pause(); }
+      else if (vid.isConnected && vid.paused && vid.getAttribute('src')) vid.play().catch(() => {});
+      else if (!vid.isConnected && !busy) startPreview();
+      if (!timer || busy) return;
+      if (canRun()) { if (timer.playState !== 'running') timer.play(); }
+      else if (timer.playState === 'running') timer.pause();
+    };
+
+    function go(to, dir) {
+      to = (to + N) % N;
+      if (busy || to === active) return;
+      busy = true;
+      if (timer) timer.cancel();
+      stopPreview();
+      const from = active;
+      const before = cards.map((_, i) => offset(i));
+      active = to;
+      // Cards that jump (the new stage on the way back, or cards skipped over) move without animating
+      still(() => cards.forEach((c, i) => {
+        const off = offset(i);
+        if (dir < 0 && off === 0) { place(i, 0); c.classList.add('act'); c.style.zIndex = 0; }
+        else if (dir > 0 && i !== from && off > before[i]) place(i, off);
+      }));
+      cards.forEach((c, i) => {
+        const off = offset(i);
+        if (dir > 0 && i === from) { c.style.zIndex = 0; return; }
+        if (dir < 0 && off === 0) return;
+        if (off === 0) { c.style.zIndex = 2; c.classList.add('act'); }
+        else { c.style.zIndex = 3; c.classList.remove('act'); }
+        place(i, off);
+      });
+      describe();
+      setTimeout(() => {
+        still(() => {
+          cards[from].classList.remove('act');
+          place(from, offset(from));
+          cards.forEach((c, i) => { c.style.zIndex = i === active ? 1 : 3; });
+        });
+        busy = false;
+        startPreview();
+        if (timer) { timer.play(); if (!canRun()) timer.pause(); }
+      }, MOVE);
+    }
+
+    if (timer) { timer.pause(); timer.onfinish = () => go(active + 1, 1); }
+    prevBtn.addEventListener('click', () => go(active - 1, -1));
+    nextBtn.addEventListener('click', () => go(active + 1, 1));
+    box.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); go(active - 1, -1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(active + 1, 1); }
+    });
+    box.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') { hover = true; sync(); } });
+    box.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') { hover = false; sync(); } });
+    box.addEventListener('focusin', e => { keyFocus = e.target.matches(':focus-visible'); sync(); });
+    box.addEventListener('focusout', () => { keyFocus = false; sync(); });
+    let downX = null;
+    box.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') downX = e.clientX; });
+    box.addEventListener('pointerup', e => {
+      if (downX === null) return;
+      const dx = e.clientX - downX;
+      downX = null;
+      if (Math.abs(dx) > 50) { if (dx < 0) go(active + 1, 1); else go(active - 1, -1); }
+    });
+    box.addEventListener('pointercancel', () => { downX = null; });
+    new IntersectionObserver(es => { inView = es[0].isIntersecting; sync(); }, { threshold: 0.45 }).observe(box);
+    new MutationObserver(sync).observe(dlg, { attributes: true, attributeFilter: ['open'] });
+    document.addEventListener('visibilitychange', sync);
+    addEventListener('resize', () => { if (!busy) layout(); });
+
+    layout();
+    cards.forEach((c, i) => { c.style.zIndex = i === 0 ? 1 : 3; });
+    describe();
+  }
+
   // Scroll-in reveals
   const seen = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add('in'); seen.unobserve(e.target); }

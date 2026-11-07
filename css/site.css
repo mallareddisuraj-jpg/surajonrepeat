@@ -241,3 +241,49 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .hot h3{color:var(--text)}
 .hot-tag{position:absolute;left:10px;top:10px;z-index:2;padding:5px 9px;background:var(--text);color:#0b0b0a}
 .lb iframe.vert{width:min(400px,100%);height:100%;aspect-ratio:auto;background:#fff;border-radius:6px}
+/* Films stage: replaces the grid when JS runs; ul.films stays as the no-JS fallback */
+.fs{--x0:50%;--above-row:34px;position:relative;margin:0 calc(var(--gut)*-1);height:max(540px,min(86svh,62vw));overflow:hidden;background:#000;touch-action:pan-y;isolation:isolate}
+.fs-cards{position:absolute;inset:0}
+.fs-card{position:absolute;display:block;padding:0;overflow:hidden;background:#111;text-align:left;cursor:pointer;box-shadow:0 14px 34px rgba(0,0,0,.55);transition:left .76s cubic-bezier(.7,0,.2,1),top .76s cubic-bezier(.7,0,.2,1),width .76s cubic-bezier(.7,0,.2,1),height .76s cubic-bezier(.7,0,.2,1)}
+.fs-card.still{transition:none}
+.fs-card img,.fs-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.fs-vid{opacity:0;transition:opacity .4s}.fs-vid.on{opacity:1}
+.fs-card::before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(0,0,0,.86),rgba(0,0,0,0) 62%);transition:opacity .5s}
+.fs-card::after{content:"";position:absolute;inset:0;z-index:1;opacity:0;background:linear-gradient(90deg,rgba(0,0,0,.82),rgba(0,0,0,.34) 46%,rgba(0,0,0,.1) 70%),linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,0) 48%);transition:opacity .5s}
+.fs-card.act{box-shadow:none}
+.fs-card.act::before{opacity:0}.fs-card.act::after{opacity:1}
+.fs-card:not(.act):hover,.fs-card:not(.act):focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+.fs-card-text{position:absolute;left:12px;right:10px;bottom:12px;z-index:2;display:block;transition:opacity .3s}
+.fs-card.act .fs-card-text{opacity:0}
+.fs-card-text small{display:block;color:rgba(255,255,255,.72);font-size:10px;margin-bottom:5px}
+.fs-card-text b{display:block;font:400 clamp(16px,1.5vw,24px)/1 var(--head);letter-spacing:.008em;text-transform:uppercase;color:#fff;overflow-wrap:anywhere}
+.fs-timer{position:absolute;inset:0 0 auto;z-index:6;height:3px;pointer-events:none}
+.fs-timer i{display:block;height:100%;background:var(--red);transform:scaleX(0);transform-origin:0 50%}
+.fs-info{position:absolute;left:var(--gut);bottom:var(--above-row);z-index:5;width:calc(var(--x0) - var(--gut) - 28px);pointer-events:none;color:#fff}
+.fs-info>*{opacity:0}
+.fs-info.in>*{opacity:1;animation:fsUp .6s cubic-bezier(.2,.7,.2,1) backwards}
+.fs-info.in h3{animation-delay:.06s}.fs-info.in p{animation-delay:.12s}.fs-info.in a{animation-delay:.18s}
+@keyframes fsUp{from{opacity:0;transform:translateY(16px)}}
+.fs-info small{display:block;color:rgba(255,255,255,.78)}
+.fs-info h3{font:400 clamp(38px,6vw,104px)/.94 var(--head);letter-spacing:.008em;text-transform:uppercase;margin-top:10px;overflow-wrap:anywhere}
+.fs-info h3.long{font-size:clamp(30px,4vw,68px)}
+.fs-info p{color:rgba(255,255,255,.82);font-size:clamp(14px,1.15vw,17px);line-height:1.4;margin-top:12px;max-width:46ch}
+.fs-info a{pointer-events:auto;margin-top:18px}
+.fs-nav{position:absolute;left:var(--x0);right:var(--gut);bottom:20px;z-index:5;display:flex;align-items:center;gap:10px;color:#fff}
+.fs-arrow{width:46px;height:46px;flex:none;display:grid;place-items:center;border:1.5px solid rgba(255,255,255,.8);color:#fff;font-size:18px;background:rgba(0,0,0,.25);cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.fs-arrow:hover{background:var(--red);border-color:var(--red);color:#0b0b0a}
+.fs-line{flex:1;height:2px;margin:0 8px;background:rgba(255,255,255,.25)}
+.fs-line i{display:block;height:100%;background:var(--red);transform:scaleX(0);transform-origin:0 50%;transition:transform .76s cubic-bezier(.7,0,.2,1)}
+.fs-count{flex:none}
+@media(max-width:759px){
+.fs{height:max(590px,76svh)}
+.fs-info{width:auto;right:var(--gut)}
+.fs-info h3{font-size:clamp(38px,11vw,62px)}
+.fs-info h3.long{font-size:clamp(28px,8vw,44px)}
+.fs-nav{left:var(--gut);bottom:10px}
+.fs-arrow{width:42px;height:42px}
+.fs-card-text{left:8px;right:6px;bottom:8px}
+.fs-card-text small{display:none}
+.fs-card-text b{font-size:14px}
+}
+@media(prefers-reduced-motion:reduce){.fs-card,.fs-line i,.fs-vid{transition:none}.fs-info.in>*{animation:none}.fs-timer{display:none}}
