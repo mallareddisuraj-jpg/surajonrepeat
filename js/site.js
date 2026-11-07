@@ -5,6 +5,17 @@
   const saveData = navigator.connection && navigator.connection.saveData;
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // The nav slides away while scrolling down and returns on the way up, so it never sits on the content
+  let lastY = scrollY;
+  addEventListener('scroll', () => {
+    const y = scrollY, root = document.documentElement.classList;
+    if (y < 80) root.remove('nav-away');
+    else if (y > lastY + 6) root.add('nav-away');
+    else if (y < lastY - 6) root.remove('nav-away');
+    else return;
+    lastY = y;
+  }, { passive: true });
+
   // Background glass: moves at 5% of the page's scroll speed
   const glass = document.querySelector('.bg-glass');
   if (glass && !calm) {
@@ -23,6 +34,128 @@
     addEventListener('load', fit);
     fit();
     move();
+  }
+
+  // The eyes look from number to number, aimed at where each one really sits on the page
+  const eyesArt = document.querySelector('.eyes-art');
+  if (eyesArt) {
+    const irises = eyesArt.querySelectorAll('.iris');
+    const numbers = [...document.querySelectorAll('.stats b')];
+    const FACE_W = 1195;
+    const narrow = matchMedia('(max-width: 760px)');
+    const fitSheet = () => eyesArt.setAttribute('viewBox', narrow.matches ? '0 0 1195 1270' : '0 0 2300 542');
+    fitSheet();
+    const aim = n => {
+      const r = eyesArt.getBoundingClientRect();
+      const unit = r.width / eyesArt.viewBox.baseVal.width; // page pixels per image unit
+      const t = numbers[n].getBoundingClientRect();
+      const dx = t.left + t.width / 2 - (r.left + 681 * unit);
+      const dy = t.top + t.height / 2 - (r.top + 337 * unit);
+      const x = 25 * Math.tanh(dx / (FACE_W * unit * 0.9));
+      const y = 8 * Math.tanh(dy / (542 * unit * 0.45));
+      irises.forEach(i => { i.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`; });
+    };
+    let at = 0, seen = false, timer = 0, moves = 0;
+    aim(0);
+    addEventListener('resize', () => { fitSheet(); aim(at); });
+    if (!calm) {
+      const look = () => {
+        if (!seen) return;
+        at = (at + 1) % numbers.length;
+        moves++;
+        // A blink now and then, with the eyes moving while they are shut
+        if (moves % 3 === 0) {
+          eyesArt.classList.add('blink');
+          setTimeout(() => aim(at), 70);
+          setTimeout(() => eyesArt.classList.remove('blink'), 130);
+        } else aim(at);
+        timer = setTimeout(look, 1300 + Math.random() * 700);
+      };
+      new IntersectionObserver(es => {
+        seen = es[0].isIntersecting;
+        clearTimeout(timer);
+        if (seen) timer = setTimeout(look, 900);
+      }, { threshold: 0.2 }).observe(eyesArt);
+    }
+  }
+
+  // The Ideate line wraps around a cylinder: each column of the text is drawn narrower and
+  // shorter the further it curves away, so the words turn in depth as they scroll.
+  const bandBody = document.querySelector('.band .body');
+  const line = bandBody && bandBody.querySelector('.marquee');
+  const warp = line && document.createElement('canvas');
+  const warpCtx = warp && warp.getContext && warp.getContext('2d');
+  if (warpCtx) {
+    const ANGLE = 1.05, PERSPECTIVE = 1.3; // how far round it curves, and how much the edges shrink
+    const piece = line.firstElementChild;
+    let src, loop = 1, speed = 0, type = 0, W = 0, H = 0, wd = 0, hd = 0, ratio = 1, pos = 0, last = 0, live = false, raf = 0, srcScale = 1, srcH = 1;
+
+    const build = () => {
+      ratio = Math.min(devicePixelRatio || 1, 2);
+      W = bandBody.clientWidth; H = bandBody.clientHeight;
+      wd = warp.width = Math.round(W * ratio);
+      hd = warp.height = Math.round(H * ratio);
+      type = parseFloat(getComputedStyle(piece).fontSize);
+      srcScale = ratio * 1.2;
+      src = document.createElement('canvas');
+      const c = src.getContext('2d');
+      const font = `400 ${type * srcScale}px "Peace Sans", sans-serif`;
+      const parts = [...piece.childNodes].map(n => ({ text: n.textContent.toUpperCase(), red: n.nodeType === 1 }));
+      c.font = font;
+      const gap = type * srcScale * 0.45;
+      const widths = parts.map(p => c.measureText(p.text).width);
+      const full = widths.reduce((a, b) => a + b, 0) + gap;
+      loop = full / srcScale;
+      speed = loop * 2 / 26; // the same pace the line always had
+      const cap = c.measureText('H').actualBoundingBoxAscent;
+      srcH = Math.ceil(type * srcScale * 1.1);
+      src.width = Math.ceil(full + type * srcScale * 2);
+      src.height = srcH;
+      c.font = font;
+      const ink = getComputedStyle(bandBody).color, red = getComputedStyle(piece.querySelector('i')).color;
+      const y = (srcH + cap) / 2;
+      for (let x = 0; x < src.width; x += full) {
+        let at = x;
+        parts.forEach((p, i) => { c.fillStyle = p.red ? red : ink; c.fillText(p.text, at, y); at += widths[i]; });
+      }
+    };
+    const draw = () => {
+      warpCtx.clearRect(0, 0, wd, hd);
+      const step = Math.max(2, Math.round(ratio * 1.5));
+      const sinA = Math.sin(ANGLE), R = W / (2 * sinA);
+      for (let x = 0; x < wd; x += step) {
+        const th = Math.asin(((x + step / 2) / wd * 2 - 1) * sinA);
+        const depth = Math.cos(th);
+        const u = (((R * (th + ANGLE) + pos) % loop) + loop) % loop;
+        const sw = (step / ratio / depth) * srcScale;
+        const h = type * 1.26 * (PERSPECTIVE / (PERSPECTIVE + 1 - depth)) * ratio;
+        warpCtx.drawImage(src, u * srcScale, 0, sw, srcH, x, (hd - h) / 2, step + 1, h);
+      }
+    };
+    const frame = now => {
+      if (!live) return;
+      pos += speed * Math.min(0.05, (now - last) / 1000);
+      last = now;
+      draw();
+      raf = requestAnimationFrame(frame);
+    };
+    const start = () => {
+      warp.className = 'marquee-warp';
+      warp.setAttribute('aria-hidden', 'true');
+      bandBody.append(warp);
+      bandBody.classList.add('warped');
+      build();
+      draw();
+      if (calm) return;
+      new IntersectionObserver(es => {
+        live = es[0].isIntersecting;
+        cancelAnimationFrame(raf);
+        if (live) { last = performance.now(); raf = requestAnimationFrame(frame); }
+      }).observe(bandBody);
+    };
+    let sizedFor = innerWidth;
+    addEventListener('resize', () => { if (innerWidth !== sizedFor && warp.isConnected) { sizedFor = innerWidth; build(); draw(); } });
+    (document.fonts ? document.fonts.load(`400 ${parseFloat(getComputedStyle(piece).fontSize)}px "Peace Sans"`, 'IDEATE') : Promise.resolve()).then(start, start);
   }
 
   // Films stage: one film fills it, the next wait in a row, and a card opens into the stage.
