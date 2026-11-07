@@ -70,8 +70,8 @@
     const measure = () => {
       W = box.clientWidth; H = box.clientHeight;
       const narrow = W < 760, nav = narrow ? 62 : 86;
-      ch = Math.round(H * (narrow ? 0.27 : 0.5));
-      cw = Math.round(ch * 0.74);
+      ch = Math.round(H * (narrow ? 0.123 : 0.228));
+      cw = Math.round(ch * 16 / 9);
       gap = narrow ? 10 : 18;
       x0 = narrow ? info.offsetLeft : Math.round(W * 0.5);
       y0 = H - nav - ch;
