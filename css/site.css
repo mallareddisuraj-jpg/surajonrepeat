@@ -349,6 +349,11 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .fs-upright .fs-info h3{font-size:clamp(26px,3.3vw,58px)}
 .fs-upright .fs-info h3.long{font-size:clamp(23px,2.6vw,44px)}
 .fs-upright .fs-card-text b{font-size:clamp(12px,.95vw,15px)}
+/* long form: the YouTube player sits behind the title; row cards are thumbnails with their own headlines */
+.fs-yt{position:absolute;left:50%;top:50%;border:0;opacity:0;pointer-events:none;transition:opacity .7s}
+.fs-yt.on{opacity:1}
+.fs-embed .fs-card.act img{filter:brightness(.5)}
+.fs-embed .fs-card:not(.act) .fs-card-text,.fs-embed .fs-card:not(.act)::before{display:none}
 @media(max-width:759px){
 .fs{height:max(590px,76svh)}
 .fs-upright{height:max(600px,min(170vw,86svh))}

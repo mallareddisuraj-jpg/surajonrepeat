@@ -186,7 +186,7 @@
 
   // Films stage: one film fills it, the next wait in a row, and a card opens into the stage.
   // Runs before the preview observer below so the list's own videos never load.
-  const buildStage = (filmList, { label, noun, upright = false }) => {
+  const buildStage = (filmList, { label, noun, upright = false, embed = false }) => {
     const HOLD = 10000, MOVE = calm ? 0 : 760;
     const films = [...filmList.children].map(li => {
       const c = li.querySelector('.card');
@@ -206,7 +206,7 @@
     });
     const N = films.length;
     const box = document.createElement('div');
-    box.className = upright ? 'fs fs-upright' : 'fs';
+    box.className = upright ? 'fs fs-upright' : embed ? 'fs fs-embed' : 'fs';
     box.setAttribute('role', 'group');
     box.setAttribute('aria-roledescription', 'carousel');
     box.setAttribute('aria-label', label);
@@ -242,7 +242,7 @@
     });
 
     let active = 0, busy = false, hover = false, keyFocus = false, inView = false;
-    let W = 0, cw = 0, ch = 0, gap = 0, x0 = 0, y0 = 0, H = 0, px = 0, pw = 0;
+    let W = 0, cw = 0, ch = 0, gap = 0, x0 = 0, y0 = 0, H = 0, px = 0, pw = 0, py = 0, ph = 0;
     const offset = i => (i - active + N) % N;
     const slotLeft = off => x0 + (off - 1) * (cw + gap);
 
@@ -250,7 +250,7 @@
       W = box.clientWidth; H = box.clientHeight;
       const narrow = W < 760, nav = narrow ? 62 : 86;
       gap = narrow ? 10 : 18;
-      px = 0; pw = W; // the open card's left edge and width
+      px = 0; pw = W; py = 0; ph = H; // the open card's box
       if (upright) {
         ch = Math.round(H * (narrow ? 0.2 : 0.44));
         cw = Math.round(ch * 9 / 16);
@@ -272,7 +272,7 @@
     };
     const place = (i, off) => {
       const c = cards[i], s = c.style;
-      if (off === 0) { s.left = px + 'px'; s.top = '0px'; s.width = pw + 'px'; s.height = H + 'px'; }
+      if (off === 0) { s.left = px + 'px'; s.top = py + 'px'; s.width = pw + 'px'; s.height = ph + 'px'; }
       else { s.left = slotLeft(off) + 'px'; s.top = y0 + 'px'; s.width = cw + 'px'; s.height = ch + 'px'; }
       const shown = off > 0 && slotLeft(off) < W;
       c.tabIndex = shown ? 0 : -1;
@@ -294,6 +294,15 @@
 
     const glow = upright ? [...box.querySelectorAll('.fs-glow img')] : [];
     let glowAt = 0;
+    function fillInfo(f) {
+      info.querySelector('small').textContent = f.meta;
+      const h = info.querySelector('h3');
+      h.textContent = f.title;
+      h.classList.toggle('long', f.title.length > 24);
+      const p = info.querySelector('p');
+      p.textContent = f.desc;
+      p.hidden = !f.desc;
+    }
     const describe = () => {
       const f = films[active];
       if (glow.length) {
@@ -303,13 +312,7 @@
         glow[glowAt].classList.add('on');
       }
       info.classList.remove('in');
-      info.querySelector('small').textContent = f.meta;
-      const h = info.querySelector('h3');
-      h.textContent = f.title;
-      h.classList.toggle('long', f.title.length > 24);
-      const p = info.querySelector('p');
-      p.textContent = f.desc;
-      p.hidden = !f.desc;
+      fillInfo(f);
       play.textContent = f.action;
       play.href = f.href || f.data.film;
       Object.keys(f.data).forEach(k => { if (f.data[k]) play.dataset[k] = f.data[k]; else delete play.dataset[k]; });
@@ -333,7 +336,34 @@
       if (!canRun()) timer.pause();
     }
 
+    // YouTube has no file to preview, so its player runs muted behind the title, a little zoomed to crop its own labels
+    let frame = null, frameTimer = 0;
+    const stopFrame = () => {
+      clearTimeout(frameTimer);
+      if (frame) { frame.remove(); frame = null; }
+    };
+    const startFrame = () => {
+      const id = films[active].data.yt;
+      if (frame || !id) return;
+      const w = Math.round(Math.max(W, H * 16 / 9) * 1.28), h = Math.round(w * 9 / 16);
+      frame = document.createElement('iframe');
+      frame.className = 'fs-yt';
+      frame.title = '';
+      frame.tabIndex = -1;
+      frame.setAttribute('aria-hidden', 'true');
+      frame.allow = 'autoplay; encrypted-media';
+      frame.referrerPolicy = 'strict-origin-when-cross-origin';
+      frame.style.cssText = `width:${w}px;height:${h}px;margin:${-h / 2}px 0 0 ${-w / 2}px`;
+      frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&iv_load_policy=3&modestbranding=1&playsinline=1&rel=0&start=90&loop=1&playlist=${id}`;
+      // Reveal after YouTube's own icons have faded; the card's 10 seconds start then. If it never loads, carry on anyway.
+      const shown = frame;
+      const reveal = () => { clearTimeout(frameTimer); shown.classList.add('on'); sync(); };
+      frameTimer = setTimeout(reveal, 6000);
+      frame.addEventListener('load', () => { clearTimeout(frameTimer); frameTimer = setTimeout(reveal, 2300); });
+      cards[active].append(frame);
+    };
     const stopPreview = () => {
+      stopFrame();
       vid.classList.remove('on');
       vid.pause();
       vid.removeAttribute('src');
@@ -341,6 +371,7 @@
       vid.remove();
     };
     const startPreview = () => {
+      if (embed) { if (!saveData && !calm && inView && !dlg.open) startFrame(); return; }
       const full = playsFull();
       const src = full ? films[active].data.film : films[active].preview;
       if (!src || saveData || calm || !inView || dlg.open) return;
@@ -354,9 +385,9 @@
     const fill = q('.fs-timer i');
     const timer = calm ? null : fill.animate(
       [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: HOLD, easing: 'linear' });
-    const canRun = () => inView && !hover && !keyFocus && !dlg.open && !document.hidden;
+    const canRun = () => inView && !hover && !keyFocus && !dlg.open && !document.hidden && (!frame || frame.classList.contains('on'));
     const sync = () => {
-      if (dlg.open || !inView) { if (!vid.paused) vid.pause(); }
+      if (dlg.open || !inView) { stopFrame(); if (!vid.paused) vid.pause(); }
       else if (vid.isConnected && vid.paused && !vid.ended && vid.getAttribute('src')) vid.play().catch(() => {});
       else if (!vid.isConnected && !busy) startPreview();
       if (!timer || busy) return;
@@ -432,7 +463,7 @@
     new IntersectionObserver(es => { inView = es[0].isIntersecting; sync(); }, { threshold: 0.45 }).observe(box);
     new MutationObserver(sync).observe(dlg, { attributes: true, attributeFilter: ['open'] });
     document.addEventListener('visibilitychange', sync);
-    addEventListener('resize', () => { if (!busy) layout(); });
+    addEventListener('resize', () => { if (busy) return; layout(); if (embed) { stopFrame(); sync(); } });
 
     layout();
     cards.forEach((c, i) => { c.style.zIndex = i === 0 ? 1 : 3; });
@@ -442,6 +473,8 @@
   if (reelList) buildStage(reelList, { label: 'Reels', noun: 'reel', upright: true });
   const filmList = document.querySelector('ul.films');
   if (filmList) buildStage(filmList, { label: 'Films', noun: 'film' });
+  const longList = document.querySelector('ul.yt');
+  if (longList) buildStage(longList, { label: 'Long form', noun: 'video', embed: true });
 
   // Most-watched strip: drifts on its own in a soft wave, slows under the pointer, and can be dragged
   const makeFlow = (flow, { wave = true, pace = 38, lever = null } = {}) => {
