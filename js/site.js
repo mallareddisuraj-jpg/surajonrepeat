@@ -10,8 +10,7 @@
   const FLICKER = {
     end: 0.8,
     on: 0.52,
-    page: [[0, 0, 'ease-in-out'], [0.2, 0.6, 'ease-in-out'], [0.38, 0, 'step-end'], [0.52, 1, 'ease-out'], [0.8, 1]],
-    pings: [0.52]
+    page: [[0, 0, 'ease-in-out'], [0.2, 0.6, 'ease-in-out'], [0.38, 0, 'step-end'], [0.52, 1, 'ease-out'], [0.8, 1]]
   };
 
   // Sounds: all generated here, so there are no audio files to load. They only play after the
@@ -79,21 +78,18 @@
       burst(t, 0.16 * peak, 0.02, 'bandpass', 1300);
       tone(t, 0.55 * peak, 0.11, 150, 60);
     };
-    // Pressing record on a camera: one clean, steady electronic beep with hard edges, then the
-    // small ping as the lights snap on
-    const recordBeep = t => {
+    // The start sound: two quick high pips, the user's pick from a set of options
+    const pip = t => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
-      o.type = 'triangle';
-      o.frequency.value = 2800;
+      o.frequency.value = 3000;
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.14, t + 0.004);
-      g.gain.setValueAtTime(0.14, t + 0.11);
-      g.gain.linearRampToValueAtTime(0, t + 0.118);
+      g.gain.linearRampToValueAtTime(0.105, t + 0.004);
+      g.gain.setValueAtTime(0.105, t + 0.038);
+      g.gain.linearRampToValueAtTime(0, t + 0.05);
       o.connect(g).connect(out);
       o.start(t);
-      o.stop(t + 0.13);
-      FLICKER.pings.forEach(at => tone(t + at, 0.07, 0.16, 2100, 2000));
+      o.stop(t + 0.06);
     };
     const reelTicks = (t, ms, pitch) => {
       let at = 0, gap = 0.04;
@@ -134,7 +130,7 @@
     });
     let lastTick = 0;
     return {
-      lightsOn: () => play(t => { clunk(t); if (!calm) recordBeep(t + 0.02); }),
+      lightsOn: () => play(t => { pip(t); pip(t + 0.09); }),
       lightsOff: () => play(t => { clunk(t); tone(t, 0.1, 0.3, 110, 50); }),
       spin: runs => play(t => {
         clunk(t, 0.9);
@@ -1111,6 +1107,58 @@
     addEventListener('resize', sizeReels);
     sizeReels();
     show(0);
+  });
+
+  // Safar: rows collapse to the year, name and role. Hovering drops the details down; a click or
+  // tap keeps them open until clicked again. Without this script everything stays visible.
+  const canHover = matchMedia('(hover: hover)').matches;
+  document.querySelectorAll('.safar li').forEach(li => {
+    const text = li.querySelector('p');
+    const name = li.querySelector('h3').textContent;
+    const body = document.createElement('div');
+    body.className = 'safar-body';
+    const clip = document.createElement('div');
+    body.append(clip);
+    text.replaceWith(body);
+    clip.append(text);
+    const more = document.createElement('button');
+    more.type = 'button';
+    more.className = 'safar-more';
+    more.setAttribute('aria-label', `Details: ${name}`);
+    more.setAttribute('aria-expanded', 'false');
+    li.append(more);
+    const show = on => {
+      li.classList.toggle('open', on);
+      more.setAttribute('aria-expanded', on);
+    };
+    let timer = 0;
+    if (canHover) {
+      // The small delays stop a quick pass over the list from opening every row
+      li.addEventListener('pointerenter', () => { clearTimeout(timer); timer = setTimeout(() => show(true), 130); });
+      li.addEventListener('pointerleave', () => {
+        clearTimeout(timer);
+        if (!li.classList.contains('pinned')) timer = setTimeout(() => show(false), 180);
+      });
+    }
+    li.addEventListener('click', () => {
+      if (String(getSelection())) return; // selecting the text is not a toggle
+      clearTimeout(timer);
+      const pin = !li.classList.contains('pinned');
+      li.classList.toggle('pinned', pin);
+      show(pin);
+    });
+  });
+
+  // Skills: keep a logo's name label on screen when the logo sits near the edge
+  document.querySelectorAll('.tools li').forEach(li => {
+    const label = li.querySelector('span');
+    const fit = () => {
+      const tile = li.getBoundingClientRect(), half = label.offsetWidth / 2, mid = tile.left + tile.width / 2, edge = 8;
+      const nudge = Math.max(0, edge - (mid - half)) - Math.max(0, mid + half - (document.documentElement.clientWidth - edge));
+      li.style.setProperty('--nudge', nudge + 'px');
+    };
+    li.addEventListener('pointerenter', fit);
+    li.addEventListener('focus', fit);
   });
 
   // Copy email
