@@ -5,6 +5,26 @@
   const saveData = navigator.connection && navigator.connection.saveData;
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Background glass: moves at 5% of the page's scroll speed
+  const glass = document.querySelector('.bg-glass');
+  if (glass && !calm) {
+    const RATE = 0.05;
+    let sized = '';
+    const fit = () => {
+      const page = document.documentElement.scrollHeight;
+      const key = `${innerWidth}:${Math.round(page / 100)}`; // ignore phone address-bar resizes
+      if (key === sized) return;
+      sized = key;
+      glass.style.height = `${Math.ceil(Math.max(innerHeight, screen.height) + page * RATE)}px`;
+    };
+    const move = () => { glass.style.transform = `translate3d(0,${-scrollY * RATE}px,0)`; };
+    addEventListener('scroll', move, { passive: true });
+    addEventListener('resize', fit);
+    addEventListener('load', fit);
+    fit();
+    move();
+  }
+
   // Films stage: one film fills it, the next wait in a row, and a card opens into the stage.
   // Runs before the preview observer below so the list's own videos never load.
   const filmList = document.querySelector('ul.films');
