@@ -215,6 +215,113 @@
     describe();
   }
 
+  // Photo gallery: the chosen photo sits in the middle, the others step down on each side.
+  // The centre photo opens the existing lightbox through its data-img; side photos move to the centre.
+  const photoList = document.querySelector('ul.photos');
+  if (photoList) {
+    const shots = [...photoList.children].map(li => {
+      const b = li.querySelector('button');
+      return { src: b.dataset.img, label: b.dataset.label, alt: li.querySelector('img').alt, pos: b.dataset.pos };
+    });
+    const box = document.createElement('div');
+    box.className = 'ph reveal';
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-roledescription', 'carousel');
+    box.setAttribute('aria-label', 'Photographs');
+    box.innerHTML = `<div class="ph-pills mono" role="group" aria-label="Filter photos"></div><div class="ph-stage"></div>
+      <div class="ph-nav"><button class="fs-arrow" type="button" aria-label="Previous photo">&larr;</button><button class="fs-arrow" type="button" aria-label="Next photo">&rarr;</button></div>`;
+    photoList.replaceWith(box);
+    const stageEl = box.querySelector('.ph-stage');
+    const SPOTS = [[0, 1, 0], [0.74, 0.8, 0.28], [1.24, 0.62, 0.5], [1.6, 0.5, 0.5]]; // shift, scale, dim
+    let list = shots.map((_, i) => i), at = 0;
+
+    const cards = shots.map((s, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ph-card';
+      b.dataset.img = s.src;
+      b.dataset.label = s.label;
+      const img = document.createElement('img');
+      img.alt = s.alt;
+      img.decoding = 'async';
+      if (s.pos) img.style.objectPosition = `${s.pos} 50%`;
+      b.append(img);
+      b.addEventListener('click', e => {
+        const idx = list.indexOf(i);
+        if (idx === at) return; // the document handler opens the lightbox
+        e.stopPropagation();
+        at = idx;
+        render();
+      });
+      stageEl.append(b);
+      return b;
+    });
+    const offs = cards.map(() => null);
+
+    function render() {
+      const len = list.length, half = Math.floor(len / 2);
+      cards.forEach((c, i) => {
+        const idx = list.indexOf(i);
+        const off = idx < 0 ? null : ((idx - at + len + half) % len) - half;
+        const was = offs[i];
+        offs[i] = off;
+        const abs = off === null ? 3 : Math.min(Math.abs(off), 3);
+        const [shift, scale, dim] = SPOTS[abs];
+        const dir = off === null ? 0 : Math.sign(off);
+        // A photo wrapping from one end to the other jumps rather than crossing the stage
+        if (off !== null && was !== null && was * off < 0 && Math.abs(was - off) > 2) c.classList.add('still');
+        c.style.transform = `translate(calc(-50% + ${dir * shift * 100}%), -50%) scale(${scale})`;
+        c.style.zIndex = 10 - abs;
+        c.style.setProperty('--dim', dim);
+        const shown = abs < 3;
+        c.classList.toggle('on', shown);
+        c.tabIndex = shown ? 0 : -1;
+        c.toggleAttribute('aria-hidden', !shown);
+        if (shown) c.setAttribute('aria-label', off === 0 ? `See the whole photo: ${shots[i].label}` : `Show this photo: ${shots[i].label}`);
+        else c.removeAttribute('aria-label');
+        c.style.cursor = off === 0 ? 'zoom-in' : 'pointer';
+        const img = c.firstElementChild;
+        if (off !== null && Math.abs(off) <= 3 && !img.getAttribute('src')) img.src = shots[i].src;
+      });
+      void box.offsetWidth;
+      cards.forEach(c => c.classList.remove('still'));
+    }
+    const step = n => { at = (at + n + list.length) % list.length; render(); };
+
+    const pills = box.querySelector('.ph-pills');
+    ['All', ...new Set(shots.map(s => s.label))].forEach((name, n) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ph-pill';
+      b.textContent = name;
+      b.setAttribute('aria-pressed', n === 0);
+      b.addEventListener('click', () => {
+        pills.querySelectorAll('button').forEach(o => o.setAttribute('aria-pressed', o === b));
+        list = shots.map((_, i) => i).filter(i => name === 'All' || shots[i].label === name);
+        at = 0;
+        render();
+      });
+      pills.append(b);
+    });
+    const [back, fwd] = box.querySelectorAll('.ph-nav button');
+    back.addEventListener('click', () => step(-1));
+    fwd.addEventListener('click', () => step(1));
+    box.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); step(-1); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); step(1); }
+    });
+    let downX = null;
+    stageEl.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') downX = e.clientX; });
+    stageEl.addEventListener('pointerup', e => {
+      if (downX === null) return;
+      const dx = e.clientX - downX;
+      downX = null;
+      if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+    });
+    stageEl.addEventListener('pointercancel', () => { downX = null; });
+    render();
+  }
+
   // Scroll-in reveals
   const seen = new IntersectionObserver(es => es.forEach(e => {
     if (e.isIntersecting) { e.target.classList.add('in'); seen.unobserve(e.target); }
