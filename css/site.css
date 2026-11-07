@@ -11,12 +11,10 @@
 :root{--ink:#0f0f0e;--ink-2:#1a1a18;--line:rgba(236,232,223,.085);--paper:#ece8df;--paper-ink:#121210;--red:#ff3b1d;--text:#ece8df;--mute:#a09c92;--gut:clamp(18px,3.4vw,56px);--head:"Peace Sans",Poppins,system-ui,sans-serif}
 *{box-sizing:border-box;margin:0}
 html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-html{background-color:var(--ink);background-image:url(../assets/img/paper.webp);background-size:1024px 1024px;background-blend-mode:soft-light}
+html{background-color:var(--ink)}
 body{background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:36px 36px,36px 36px;color:var(--text);font:400 16px/1.6 "Open Sauce Sans",Poppins,system-ui,sans-serif;overflow-x:hidden}
 .bg-glass{position:fixed;left:0;right:0;top:0;height:100%;z-index:-1;pointer-events:none;will-change:transform}
-.bg-glass::before,.bg-glass::after{content:"";position:absolute;inset:0;background:url(../assets/img/bg-texture.jpg) center/cover no-repeat;opacity:.0425}
-.bg-glass::after{transform:scaleX(-1)}
-@media(prefers-reduced-motion:reduce){.bg-glass::after{display:none}.bg-glass::before{opacity:.065}}
+.bg-glass::before{content:"";position:absolute;inset:0;background:url(../assets/img/bg-carpet.webp) center/cover no-repeat;opacity:.17}
 img,video,svg{display:block;max-width:100%}
 a{color:inherit}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -367,4 +365,4 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .ph-card:hover,.ph-card:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
 .ph-nav{display:flex;justify-content:center;gap:10px;margin-top:clamp(18px,2.4vw,30px)}
 @media(prefers-reduced-motion:reduce){.ph-card,.ph-card::after{transition:none}}
-@media(max-width:759px){.bg-glass::before,.bg-glass::after{opacity:.0275}}
+@media(max-width:759px){.bg-glass::before{opacity:.12}}
