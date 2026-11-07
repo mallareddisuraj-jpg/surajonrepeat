@@ -761,7 +761,6 @@
       const c = document.createElement('div');
       c.className = 'cell';
       c.style.backgroundImage = `url("${shots[i].src}")`;
-      c.style.backgroundPosition = `${[5.4, 50, 94.6][reel]}% 50%`; // zoomed slightly to crop the black matte
       return c;
     };
     const sizeReels = () => reels.forEach(r => r.style.setProperty('--h', r.clientHeight + 'px'));
