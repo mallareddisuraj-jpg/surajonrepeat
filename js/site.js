@@ -36,47 +36,73 @@
     move();
   }
 
-  // The eyes look from number to number, aimed at where each one really sits on the page
+  // The eyes follow the pointer while it moves, and go back to reading the numbers when it rests or leaves.
+  // Touch screens have no pointer to follow, so they only read the numbers.
   const eyesArt = document.querySelector('.eyes-art');
   if (eyesArt) {
-    const irises = eyesArt.querySelectorAll('.iris');
+    const irises = [...eyesArt.querySelectorAll('.iris')];
+    const CENTRES = [[579.5, 335.5], [782.5, 339]]; // each eye's centre in the artwork
     const numbers = [...document.querySelectorAll('.stats b')];
-    const FACE_W = 1195;
+    const FACE_W = 1195, REST_AFTER = 4000;
     const narrow = matchMedia('(max-width: 760px)');
     const fitSheet = () => eyesArt.setAttribute('viewBox', narrow.matches ? '0 0 1195 1270' : '0 0 2300 542');
     fitSheet();
-    const aim = n => {
+    // Points the irises at a spot on the page; `reach` sets how quickly they hit their limit
+    const lookAt = (px, py, reach) => {
       const r = eyesArt.getBoundingClientRect();
-      const unit = r.width / eyesArt.viewBox.baseVal.width; // page pixels per image unit
-      const t = numbers[n].getBoundingClientRect();
-      const dx = t.left + t.width / 2 - (r.left + 681 * unit);
-      const dy = t.top + t.height / 2 - (r.top + 337 * unit);
-      const x = 25 * Math.tanh(dx / (FACE_W * unit * 0.9));
-      const y = 8 * Math.tanh(dy / (542 * unit * 0.45));
-      irises.forEach(i => { i.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`; });
+      const unit = r.width / eyesArt.viewBox.baseVal.width;
+      irises.forEach((iris, i) => {
+        const dx = px - (r.left + CENTRES[i][0] * unit);
+        const dy = py - (r.top + CENTRES[i][1] * unit);
+        const x = 25 * Math.tanh(dx / (FACE_W * unit * reach));
+        const y = 8 * Math.tanh(dy / (542 * unit * reach * 0.5));
+        iris.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+      });
     };
-    let at = 0, seen = false, timer = 0, moves = 0;
+    const aim = n => {
+      const t = numbers[n].getBoundingClientRect();
+      lookAt(t.left + t.width / 2, t.top + t.height / 2, 0.9);
+    };
+    let at = 0, seen = false, timer = 0, moves = 0, tracking = false, restTimer = 0, frame = 0, px = 0, py = 0;
     aim(0);
     addEventListener('resize', () => { fitSheet(); aim(at); });
-    if (!calm) {
-      const look = () => {
-        if (!seen) return;
+    const blink = () => {
+      eyesArt.classList.add('blink');
+      setTimeout(() => eyesArt.classList.remove('blink'), 130);
+    };
+    const look = () => {
+      if (!seen) return;
+      moves++;
+      if (tracking) {
+        if (moves % 3 === 0) blink();
+      } else {
         at = (at + 1) % numbers.length;
-        moves++;
         // A blink now and then, with the eyes moving while they are shut
-        if (moves % 3 === 0) {
-          eyesArt.classList.add('blink');
-          setTimeout(() => aim(at), 70);
-          setTimeout(() => eyesArt.classList.remove('blink'), 130);
-        } else aim(at);
-        timer = setTimeout(look, 1300 + Math.random() * 700);
-      };
-      new IntersectionObserver(es => {
-        seen = es[0].isIntersecting;
-        clearTimeout(timer);
-        if (seen) timer = setTimeout(look, 900);
-      }, { threshold: 0.2 }).observe(eyesArt);
-    }
+        if (moves % 3 === 0) { blink(); setTimeout(() => aim(at), 70); }
+        else aim(at);
+      }
+      timer = setTimeout(look, 1300 + Math.random() * 700);
+    };
+    const rest = () => {
+      tracking = false;
+      eyesArt.classList.remove('tracking');
+      if (seen) aim(at);
+    };
+    addEventListener('pointermove', e => {
+      if (e.pointerType === 'touch' || !seen) return;
+      px = e.clientX; py = e.clientY;
+      if (!tracking) { tracking = true; eyesArt.classList.add('tracking'); }
+      clearTimeout(restTimer);
+      restTimer = setTimeout(rest, REST_AFTER);
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; if (tracking) lookAt(px, py, 0.34); });
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => { clearTimeout(restTimer); rest(); });
+    new IntersectionObserver(es => {
+      seen = es[0].isIntersecting;
+      clearTimeout(timer);
+      if (!seen) { clearTimeout(restTimer); tracking = false; eyesArt.classList.remove('tracking'); }
+      else if (!calm) timer = setTimeout(look, 900);
+    }, { threshold: 0.2 }).observe(eyesArt);
   }
 
   // The Ideate line wraps around a cylinder: each column of the text is drawn narrower and
@@ -418,21 +444,20 @@
   if (filmList) buildStage(filmList, { label: 'Films', noun: 'film' });
 
   // Most-watched strip: drifts on its own in a soft wave, slows under the pointer, and can be dragged
-  const flow = document.querySelector('.mini ul');
-  if (flow && !calm) {
+  const makeFlow = (flow, { wave = true, pace = 38, lever = null } = {}) => {
     const originals = [...flow.children];
     for (let k = 0; k < 3; k++) originals.forEach(li => {
       const c = li.cloneNode(true);
       c.setAttribute('aria-hidden', 'true');
-      c.querySelector('a').tabIndex = -1;
+      c.querySelector('a, button').tabIndex = -1;
       flow.append(c);
     });
     flow.classList.add('flow');
     flow.querySelectorAll('img').forEach(i => { i.loading = 'eager'; i.draggable = false; });
     const items = [...flow.children];
-    const BASE = 38;
+    const BASE = pace;
     let lefts = [], setW = 1, off = 0, speed = BASE, want = BASE, seen = false, raf = 0, last = 0, width = 0, clock = 0;
-    let dragging = false, startX = 0, startOff = 0, moved = 0, lastX = 0, lastT = 0, thrown = 0;
+    let dragging = false, held = false, startX = 0, startOff = 0, moved = 0, lastX = 0, lastT = 0, thrown = 0;
     const size = () => {
       items.forEach(li => { li.style.transform = ''; });
       flow.style.transform = '';
@@ -445,15 +470,16 @@
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       clock += dt;
-      if (!dragging) {
+      if (!dragging && !held) {
         speed += (want - speed) * Math.min(1, dt * 2.6); // eases into and out of the drift
         thrown *= Math.exp(-dt * 3);
         off += (speed + thrown) * dt;
       }
       off = ((off % setW) + setW) % setW;
       flow.style.transform = `translate3d(${-off}px,0,0)`;
+      if (lever) showLever();
       const amp = width < 760 ? 6 : 11;
-      items.forEach((li, i) => {
+      if (wave) items.forEach((li, i) => {
         const x = lefts[i] - off;
         if (x < -160 || x > width + 160) return;
         const phase = x / width * Math.PI * 3 + clock * 0.75;
@@ -478,8 +504,52 @@
     const release = () => { dragging = false; thrown = Math.max(-1800, Math.min(1800, thrown)); };
     addEventListener('pointerup', release);
     addEventListener('pointercancel', release);
-    flow.addEventListener('click', e => { if (moved > 6) e.preventDefault(); }, true);
+    flow.addEventListener('click', e => { if (moved > 6) { e.preventDefault(); e.stopPropagation(); } }, true);
     flow.addEventListener('dragstart', e => e.preventDefault());
+    // The lever covers one full run of the row; grabbing it holds the drift
+    let grip = null, travel = 0, shown = -1;
+    const showLever = () => {
+      travel = lever.clientWidth - grip.offsetWidth;
+      const at = off / setW;
+      grip.style.transform = `translate3d(${(at * travel).toFixed(1)}px,0,0)`;
+      const pct = Math.round(at * 100);
+      if (pct !== shown) { shown = pct; lever.setAttribute('aria-valuenow', pct); }
+    };
+    if (lever) {
+      grip = lever.firstElementChild;
+      let grabAt = 0;
+      const seek = x => {
+        const left = lever.getBoundingClientRect().left;
+        const r = (x - left - grabAt) / (lever.clientWidth - grip.offsetWidth);
+        off = Math.max(0, Math.min(0.9999, r)) * setW;
+        thrown = 0; speed = 0;
+        flow.style.transform = `translate3d(${-off}px,0,0)`;
+        showLever();
+      };
+      lever.addEventListener('pointerdown', e => {
+        const g = grip.getBoundingClientRect();
+        // Grabbing the handle keeps it under the finger; clicking the track centres it there
+        grabAt = e.target === grip ? e.clientX - g.left : g.width / 2;
+        held = true;
+        lever.classList.add('held');
+        lever.setPointerCapture(e.pointerId);
+        seek(e.clientX);
+        e.preventDefault();
+      });
+      lever.addEventListener('pointermove', e => { if (held) seek(e.clientX); });
+      const letGo = () => { held = false; lever.classList.remove('held'); };
+      lever.addEventListener('pointerup', letGo);
+      lever.addEventListener('pointercancel', letGo);
+      lever.addEventListener('keydown', e => {
+        const step = setW / originals.length * (e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0);
+        if (!step) return;
+        e.preventDefault();
+        off = (off + step + setW) % setW;
+        speed = 0;
+        flow.style.transform = `translate3d(${-off}px,0,0)`;
+        showLever();
+      });
+    }
     addEventListener('resize', size);
     addEventListener('load', size);
     size();
@@ -488,6 +558,27 @@
       cancelAnimationFrame(raf);
       if (seen) { last = performance.now(); raf = requestAnimationFrame(tick); }
     }).observe(flow.parentElement);
+  };
+  const stripList = document.querySelector('.mini ul');
+  if (stripList && !calm) makeFlow(stripList);
+  // Packaging: the same drifting row, flat so the box designs stay easy to read
+  const packList = document.querySelector('ul.pack');
+  if (packList && !calm) {
+    const wrap = document.createElement('div');
+    wrap.className = 'pack-flow';
+    packList.before(wrap);
+    wrap.append(packList);
+    packList.querySelectorAll('.reveal').forEach(li => li.classList.remove('reveal'));
+    const lever = document.createElement('div');
+    lever.className = 'pack-lever';
+    lever.tabIndex = 0;
+    lever.setAttribute('role', 'slider');
+    lever.setAttribute('aria-label', 'Scroll through the packaging designs');
+    lever.setAttribute('aria-valuemin', '0');
+    lever.setAttribute('aria-valuemax', '100');
+    lever.innerHTML = '<span></span>';
+    wrap.after(lever);
+    makeFlow(packList, { wave: false, pace: 30, lever });
   }
 
   // Photo gallery: the chosen photo sits in the middle, the others step down on each side.
