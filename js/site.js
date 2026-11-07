@@ -160,9 +160,8 @@
 
   // Films stage: one film fills it, the next wait in a row, and a card opens into the stage.
   // Runs before the preview observer below so the list's own videos never load.
-  const filmList = document.querySelector('ul.films');
-  if (filmList) {
-    const HOLD = 7000, MOVE = calm ? 0 : 760;
+  const buildStage = (filmList, { label, noun, upright = false }) => {
+    const HOLD = 10000, MOVE = calm ? 0 : 760;
     const films = [...filmList.children].map(li => {
       const c = li.querySelector('.card');
       const v = c.querySelector('video');
@@ -172,6 +171,7 @@
         desc: (c.querySelector('p') || {}).textContent || '',
         poster: c.querySelector('img').getAttribute('src'),
         preview: v && v.dataset.src,
+        full: c.hasAttribute('data-full'), // plays its whole film before the stage moves on
         zoom: c.dataset.zoom, // crops black bars baked into the footage
         action: c.querySelector('.play').textContent,
         href: c.getAttribute('href'),
@@ -180,14 +180,14 @@
     });
     const N = films.length;
     const box = document.createElement('div');
-    box.className = 'fs';
+    box.className = upright ? 'fs fs-upright' : 'fs';
     box.setAttribute('role', 'group');
     box.setAttribute('aria-roledescription', 'carousel');
-    box.setAttribute('aria-label', 'Films');
-    box.innerHTML = `<div class="fs-timer" aria-hidden="true"><i></i></div>
+    box.setAttribute('aria-label', label);
+    box.innerHTML = `${upright ? '<div class="fs-glow" aria-hidden="true"><img alt=""><img alt=""></div>' : ''}<div class="fs-timer" aria-hidden="true"><i></i></div>
       <div class="fs-cards"></div>
       <div class="fs-info"><small class="mono"></small><h3></h3><p></p><a class="btn solid mono"></a></div>
-      <div class="fs-nav mono"><button class="fs-arrow" type="button" aria-label="Previous film">&larr;</button><button class="fs-arrow" type="button" aria-label="Next film">&rarr;</button><span class="fs-line" aria-hidden="true"><i></i></span><span class="fs-count"></span></div>`;
+      <div class="fs-nav mono"><button class="fs-arrow" type="button" aria-label="Previous ${noun}">&larr;</button><button class="fs-arrow" type="button" aria-label="Next ${noun}">&rarr;</button><span class="fs-line" aria-hidden="true"><i></i></span><span class="fs-count"></span></div>`;
     filmList.replaceWith(box);
 
     const q = s => box.querySelector(s);
@@ -216,24 +216,37 @@
     });
 
     let active = 0, busy = false, hover = false, keyFocus = false, inView = false;
-    let W = 0, cw = 0, ch = 0, gap = 0, x0 = 0, y0 = 0, H = 0;
+    let W = 0, cw = 0, ch = 0, gap = 0, x0 = 0, y0 = 0, H = 0, px = 0, pw = 0;
     const offset = i => (i - active + N) % N;
     const slotLeft = off => x0 + (off - 1) * (cw + gap);
 
     const measure = () => {
       W = box.clientWidth; H = box.clientHeight;
       const narrow = W < 760, nav = narrow ? 62 : 86;
-      ch = Math.round(H * (narrow ? 0.123 : 0.228));
-      cw = Math.round(ch * 16 / 9);
       gap = narrow ? 10 : 18;
-      x0 = narrow ? info.offsetLeft : Math.round(W * 0.5);
+      px = 0; pw = W; // the open card's left edge and width
+      if (upright) {
+        ch = Math.round(H * (narrow ? 0.2 : 0.44));
+        cw = Math.round(ch * 9 / 16);
+        if (narrow) x0 = info.offsetLeft;
+        else {
+          pw = Math.round(H * 9 / 16);
+          px = Math.round(W * 0.31);
+          x0 = px + pw + 34;
+          box.style.setProperty('--info-w', px - info.offsetLeft - 28 + 'px');
+        }
+      } else {
+        ch = Math.round(H * (narrow ? 0.123 : 0.228));
+        cw = Math.round(ch * 16 / 9);
+        x0 = narrow ? info.offsetLeft : Math.round(W * 0.5);
+      }
       y0 = H - nav - ch;
       box.style.setProperty('--x0', x0 + 'px');
       box.style.setProperty('--above-row', (narrow ? nav + ch + 18 : 34) + 'px');
     };
     const place = (i, off) => {
       const c = cards[i], s = c.style;
-      if (off === 0) { s.left = s.top = '0px'; s.width = W + 'px'; s.height = H + 'px'; }
+      if (off === 0) { s.left = px + 'px'; s.top = '0px'; s.width = pw + 'px'; s.height = H + 'px'; }
       else { s.left = slotLeft(off) + 'px'; s.top = y0 + 'px'; s.width = cw + 'px'; s.height = ch + 'px'; }
       const shown = off > 0 && slotLeft(off) < W;
       c.tabIndex = shown ? 0 : -1;
@@ -253,8 +266,16 @@
     };
     const layout = () => { measure(); still(() => cards.forEach((c, i) => { place(i, offset(i)); c.classList.toggle('act', i === active); })); };
 
+    const glow = upright ? [...box.querySelectorAll('.fs-glow img')] : [];
+    let glowAt = 0;
     const describe = () => {
       const f = films[active];
+      if (glow.length) {
+        glow[glowAt].classList.remove('on');
+        glowAt = 1 - glowAt;
+        glow[glowAt].src = f.poster;
+        glow[glowAt].classList.add('on');
+      }
       info.classList.remove('in');
       info.querySelector('small').textContent = f.meta;
       const h = info.querySelector('h3');
@@ -274,6 +295,18 @@
       info.classList.add('in');
     };
 
+    // Falls back to the ordinary timer if the full film can't play
+    let fullBroken = false, fullDone = false;
+    const playsFull = () => films[active].full && !saveData && !calm && !fullBroken;
+    const fullFailed = () => { fullBroken = true; runTimer(); };
+    function runTimer() {
+      if (!timer) return;
+      if (playsFull()) { timer.cancel(); fill.style.transform = 'scaleX(0)'; return; }
+      fill.style.transform = '';
+      timer.play();
+      if (!canRun()) timer.pause();
+    }
+
     const stopPreview = () => {
       vid.classList.remove('on');
       vid.pause();
@@ -282,22 +315,26 @@
       vid.remove();
     };
     const startPreview = () => {
-      const src = films[active].preview;
+      const full = playsFull();
+      const src = full ? films[active].data.film : films[active].preview;
       if (!src || saveData || calm || !inView || dlg.open) return;
+      vid.loop = !full;
       vid.style.transform = films[active].zoom ? `scale(${films[active].zoom})` : '';
       cards[active].append(vid);
       vid.src = src;
-      vid.play().catch(() => {});
+      vid.play().catch(e => { if (full && e.name !== 'AbortError') fullFailed(); });
     };
 
-    const timer = calm ? null : q('.fs-timer i').animate(
+    const fill = q('.fs-timer i');
+    const timer = calm ? null : fill.animate(
       [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: HOLD, easing: 'linear' });
     const canRun = () => inView && !hover && !keyFocus && !dlg.open && !document.hidden;
     const sync = () => {
       if (dlg.open || !inView) { if (!vid.paused) vid.pause(); }
-      else if (vid.isConnected && vid.paused && vid.getAttribute('src')) vid.play().catch(() => {});
+      else if (vid.isConnected && vid.paused && !vid.ended && vid.getAttribute('src')) vid.play().catch(() => {});
       else if (!vid.isConnected && !busy) startPreview();
       if (!timer || busy) return;
+      if (playsFull()) { if (fullDone && canRun()) go(active + 1, 1); return; }
       if (canRun()) { if (timer.playState !== 'running') timer.play(); }
       else if (timer.playState === 'running') timer.pause();
     };
@@ -306,7 +343,8 @@
       to = (to + N) % N;
       if (busy || to === active) return;
       busy = true;
-      if (timer) timer.cancel();
+      if (timer) { timer.cancel(); fill.style.transform = 'scaleX(0)'; }
+      fullDone = false;
       stopPreview();
       const from = active;
       const before = cards.map((_, i) => offset(i));
@@ -334,11 +372,18 @@
         });
         busy = false;
         startPreview();
-        if (timer) { timer.play(); if (!canRun()) timer.pause(); }
+        runTimer();
       }, MOVE);
     }
 
-    if (timer) { timer.pause(); timer.onfinish = () => go(active + 1, 1); }
+    if (timer) timer.onfinish = () => go(active + 1, 1);
+    // The full-length film drives the progress line itself and moves on when it ends
+    vid.addEventListener('timeupdate', () => {
+      if (timer && playsFull() && vid.duration) fill.style.transform = `scaleX(${vid.currentTime / vid.duration})`;
+    });
+    vid.addEventListener('ended', () => { if (playsFull()) { fullDone = true; sync(); } });
+    vid.addEventListener('error', () => { if (playsFull() && vid.getAttribute('src')) fullFailed(); });
+    runTimer();
     prevBtn.addEventListener('click', () => go(active - 1, -1));
     nextBtn.addEventListener('click', () => go(active + 1, 1));
     box.addEventListener('keydown', e => {
@@ -366,6 +411,83 @@
     layout();
     cards.forEach((c, i) => { c.style.zIndex = i === 0 ? 1 : 3; });
     describe();
+  };
+  const reelList = document.querySelector('ul.reels');
+  if (reelList) buildStage(reelList, { label: 'Reels', noun: 'reel', upright: true });
+  const filmList = document.querySelector('ul.films');
+  if (filmList) buildStage(filmList, { label: 'Films', noun: 'film' });
+
+  // Most-watched strip: drifts on its own in a soft wave, slows under the pointer, and can be dragged
+  const flow = document.querySelector('.mini ul');
+  if (flow && !calm) {
+    const originals = [...flow.children];
+    for (let k = 0; k < 3; k++) originals.forEach(li => {
+      const c = li.cloneNode(true);
+      c.setAttribute('aria-hidden', 'true');
+      c.querySelector('a').tabIndex = -1;
+      flow.append(c);
+    });
+    flow.classList.add('flow');
+    flow.querySelectorAll('img').forEach(i => { i.loading = 'eager'; i.draggable = false; });
+    const items = [...flow.children];
+    const BASE = 38;
+    let lefts = [], setW = 1, off = 0, speed = BASE, want = BASE, seen = false, raf = 0, last = 0, width = 0, clock = 0;
+    let dragging = false, startX = 0, startOff = 0, moved = 0, lastX = 0, lastT = 0, thrown = 0;
+    const size = () => {
+      items.forEach(li => { li.style.transform = ''; });
+      flow.style.transform = '';
+      lefts = items.map(li => li.offsetLeft + li.offsetWidth / 2);
+      setW = items[originals.length].offsetLeft - items[0].offsetLeft;
+      width = flow.parentElement.clientWidth;
+    };
+    const tick = now => {
+      if (!seen) return;
+      const dt = Math.min(0.05, (now - last) / 1000);
+      last = now;
+      clock += dt;
+      if (!dragging) {
+        speed += (want - speed) * Math.min(1, dt * 2.6); // eases into and out of the drift
+        thrown *= Math.exp(-dt * 3);
+        off += (speed + thrown) * dt;
+      }
+      off = ((off % setW) + setW) % setW;
+      flow.style.transform = `translate3d(${-off}px,0,0)`;
+      const amp = width < 760 ? 6 : 11;
+      items.forEach((li, i) => {
+        const x = lefts[i] - off;
+        if (x < -160 || x > width + 160) return;
+        const phase = x / width * Math.PI * 3 + clock * 0.75;
+        li.style.transform = `translate3d(0,${(Math.sin(phase) * amp).toFixed(1)}px,0) rotate(${(Math.cos(phase) * 3).toFixed(2)}deg)`;
+      });
+      raf = requestAnimationFrame(tick);
+    };
+    flow.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') want = 0; });
+    flow.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') want = BASE; });
+    flow.addEventListener('focusin', () => { want = 0; off = 0; flow.parentElement.scrollLeft = 0; });
+    flow.addEventListener('focusout', () => { want = BASE; });
+    flow.addEventListener('pointerdown', e => {
+      dragging = true; moved = 0; thrown = 0;
+      startX = lastX = e.clientX; startOff = off; lastT = e.timeStamp;
+    });
+    addEventListener('pointermove', e => {
+      if (!dragging) return;
+      moved = Math.max(moved, Math.abs(e.clientX - startX));
+      off = startOff - (e.clientX - startX);
+      if (e.timeStamp > lastT) { thrown = -(e.clientX - lastX) / (e.timeStamp - lastT) * 1000; lastX = e.clientX; lastT = e.timeStamp; }
+    });
+    const release = () => { dragging = false; thrown = Math.max(-1800, Math.min(1800, thrown)); };
+    addEventListener('pointerup', release);
+    addEventListener('pointercancel', release);
+    flow.addEventListener('click', e => { if (moved > 6) e.preventDefault(); }, true);
+    flow.addEventListener('dragstart', e => e.preventDefault());
+    addEventListener('resize', size);
+    addEventListener('load', size);
+    size();
+    new IntersectionObserver(es => {
+      seen = es[0].isIntersecting;
+      cancelAnimationFrame(raf);
+      if (seen) { last = performance.now(); raf = requestAnimationFrame(tick); }
+    }).observe(flow.parentElement);
   }
 
   // Photo gallery: the chosen photo sits in the middle, the others step down on each side.

@@ -259,6 +259,13 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .mini ul{display:flex;gap:8px;overflow-x:auto;padding:0 0 8px;scrollbar-width:thin;scrollbar-color:var(--red) transparent}
 .mini li{list-style:none;flex:0 0 clamp(60px,5.25vw,78px)}
 .mini a{display:block;text-decoration:none}
+/* the strip as a flowing ribbon: it bleeds off both edges and waves as it drifts */
+.mini:has(.flow){margin-left:calc(var(--gut)*-1);margin-right:calc(var(--gut)*-1);overflow:hidden}
+.mini:has(.flow)>p{padding:0 var(--gut)}
+.mini ul.flow{width:max-content;overflow:visible;padding:18px 0 22px;touch-action:pan-y;cursor:grab;will-change:transform;user-select:none;-webkit-user-select:none}
+.mini ul.flow:active{cursor:grabbing}
+.flow li{flex-basis:clamp(84px,7.4vw,118px);will-change:transform}
+.flow img{-webkit-user-drag:none}
 .mini img{width:100%;height:auto;aspect-ratio:9/16;object-fit:cover;background:#000;outline:1px solid var(--line);outline-offset:-1px;transition:transform .15s}
 .mini a:hover img,.mini a:focus-visible img{outline:2px solid var(--red);transform:translateY(-3px)}
 .mini b{display:block;margin-top:5px;font-size:11px;font-weight:500;color:var(--text)}
@@ -302,9 +309,22 @@ dialog::backdrop{background:rgba(6,6,5,.94)}
 .fs-arrow:hover{background:var(--red);border-color:var(--red);color:#0b0b0a}
 .fs-line{flex:1;height:2px;margin:0 8px;background:rgba(255,255,255,.25)}
 .fs-line i{display:block;height:100%;background:var(--red);transform:scaleX(0);transform-origin:0 50%;transition:transform .76s cubic-bezier(.7,0,.2,1)}
+@media(min-width:760px){.fs-upright .fs-info{width:var(--info-w)}.fs-upright .fs-card.act::after{opacity:0}.fs-upright .fs-card.act{box-shadow:0 0 60px rgba(0,0,0,.55)}}
 .fs-count{flex:none}
+/* upright stage for reels: the open reel is a tall panel over a blurred copy of itself */
+.fs-glow,.fs-glow img{position:absolute;inset:0}
+.fs-glow{overflow:hidden}
+.fs-glow img{width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.25);filter:blur(42px) brightness(.34) saturate(1.25);transition:opacity .8s}
+.fs-glow img.on{opacity:1}
+.fs-upright .fs-info h3{font-size:clamp(26px,3.3vw,58px)}
+.fs-upright .fs-info h3.long{font-size:clamp(23px,2.6vw,44px)}
+.fs-upright .fs-card-text b{font-size:clamp(12px,.95vw,15px)}
 @media(max-width:759px){
 .fs{height:max(590px,76svh)}
+.fs-upright{height:max(600px,min(170vw,86svh))}
+.fs-upright .fs-info h3{font-size:clamp(30px,8.6vw,48px)}
+.fs-upright .fs-info h3.long{font-size:clamp(24px,6.6vw,36px)}
+.fs-upright .fs-card-text b{font-size:10px}
 .fs-info{width:auto;right:var(--gut)}
 .fs-info h3{font-size:clamp(32px,9vw,52px)}
 .fs-info h3.long{font-size:clamp(23px,6.6vw,36px)}
